@@ -1,3 +1,5 @@
 .env
 .help
 .ssh
+*.pyc
+.DS_Store
