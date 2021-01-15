@@ -2,6 +2,7 @@ import twitter
 import os
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+import urllib
 import random
 
 load_dotenv()
@@ -16,8 +17,16 @@ api = twitter.Api(
 
 def get_avatar_tweet_url():
     day = get_recent_day()
-    query = api.GetSearch(term='avatar last airbender', until=day, count=100)
-    tweet = random.choice(list(query))
+    parts = [
+        'avatar%20last%20airbender',
+        '%20-filter=replies',
+        'count=100',
+        f'until={day}'
+    ]
+    qs = '&'.join(parts)
+    qs = f'q={qs}'
+    query = api.GetSearch(raw_query=qs)
+    tweet = random.choice(query)
     username = tweet.user.screen_name
     tweet_id = tweet.id
     return f'https://twitter.com/{username}/status/{tweet_id}'
