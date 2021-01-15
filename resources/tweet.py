@@ -27,8 +27,7 @@ def get_avatar_tweet_url():
 def get_recent_day(days=7):
     """Get any day within the last 7 days
     """
-    choice = random.randint(0, 7)
-    date = datetime.now() - timedelta(days=1)
+    date = datetime.now() - timedelta(days=random.randint(0, 7))
     return date.date().isoformat()
 
 
