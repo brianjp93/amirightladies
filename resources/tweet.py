@@ -19,7 +19,7 @@ def get_avatar_tweet_url():
     day = get_recent_day()
     parts = [
         'avatar%20last%20airbender',
-        '%20-filter=replies',
+        '%20-filter=retweets',
         'count=100',
         f'until={day}'
     ]
