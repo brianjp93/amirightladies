@@ -17,14 +17,7 @@ api = twitter.Api(
 
 def get_avatar_tweet_url():
     day = get_recent_day()
-    parts = [
-        'avatar%20last%20airbender',
-        '%20-filter=retweets',
-        'count=100',
-        f'until={day}'
-    ]
-    qs = '&'.join(parts)
-    qs = f'q={qs}'
+    qs = f'q=avatar last airbender&count=100&until={day} -RT'.replace(' ', '%20')
     query = api.GetSearch(raw_query=qs)
     tweet = random.choice(query)
     username = tweet.user.screen_name
