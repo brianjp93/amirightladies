@@ -16,12 +16,16 @@ api = twitter.Api(
 )
 
 def get_avatar_tweet_url():
-    retries = 3
+    retries = 5
     retry = 0
     while retry < retries:
         day = get_recent_day()
         qs = f'q=avatar last airbender&count=100&until={day} -RT'.replace(' ', '%20')
-        query = api.GetSearch(raw_query=qs)
+        try:
+            query = api.GetSearch(raw_query=qs)
+        except twitter.TwitterError:
+            query = None
+            print(f'There was an error while running query.')
         if query:
             tweet = random.choice(query)
             username = tweet.user.screen_name
