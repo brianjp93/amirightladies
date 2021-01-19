@@ -25,7 +25,7 @@ def get_avatar_tweet_url():
             query = api.GetSearch(raw_query=qs)
         except twitter.TwitterError:
             query = None
-            print(f'There was an error while running query.')
+            print('There was an error while running query.')
         if query:
             tweet = random.choice(query)
             username = tweet.user.screen_name
