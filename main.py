@@ -21,7 +21,6 @@ class Client(discord.Client):
         print(f'Logged on as {self.user}')
 
     async def on_message(self, message):
-        import pdb; pdb.set_trace()
         print(f'Message from {message.author}: {message.content}')
         channel_name = str(message.channel)
         if self.user != message.author:

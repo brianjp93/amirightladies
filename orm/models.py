@@ -23,7 +23,7 @@ class Member(SQLModel, table=True):
     guild: Optional[Guild] = Relationship(back_populates="members")
 
     @staticmethod
-    def create_from_member(member: DMember):
+    def create_from_member(member: DMember) -> 'Member':
         with Session(engine) as session:
             guild: DGuild = member.guild
             new_guild = Guild(exid=guild.id)
@@ -40,3 +40,4 @@ class Member(SQLModel, table=True):
             )
             session.add(new_member)
             session.commit()
+        return new_member
