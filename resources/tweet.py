@@ -1,18 +1,13 @@
 import twitter
-import os
-from dotenv import load_dotenv
 from datetime import datetime, timedelta
-import urllib
 import random
-
-load_dotenv()
-ENV = os.environ
+import settings
 
 api = twitter.Api(
-    consumer_key=ENV.get('TWITTER_API_KEY'),
-    consumer_secret=ENV.get('TWITTER_API_SECRET'),
-    access_token_key=ENV.get('TWITTER_ACCESS_TOKEN'),
-    access_token_secret=ENV.get('TWITTER_ACCESS_SECRET')
+    consumer_key=settings.TWITTER_API_KEY,
+    consumer_secret=settings.TWITTER_API_SECRET,
+    access_token_key=settings.TWITTER_ACCESS_TOKEN,
+    access_token_secret=settings.TWITTER_ACCESS_SECRET,
 )
 
 def get_avatar_tweet_url():
@@ -36,7 +31,7 @@ def get_avatar_tweet_url():
 def get_recent_day(days=7):
     """Get any day within the last 7 days
     """
-    date = datetime.now() - timedelta(days=random.randint(0, 7))
+    date = datetime.now() - timedelta(days=random.randint(0, days))
     return date.date().isoformat()
 
 

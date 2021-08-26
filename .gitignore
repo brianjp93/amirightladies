@@ -3,3 +3,4 @@
 .ssh
 *.pyc
 .DS_Store
+local.db

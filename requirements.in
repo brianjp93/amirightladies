@@ -1,0 +1,5 @@
+discord.py
+python-dotenv
+python-twitter
+requests
+sqlmodel==0.0.4
