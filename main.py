@@ -7,6 +7,7 @@ import settings
 from discord.ext import tasks
 from discord.message import Message as DMessage
 from discord.member import Member as DMember
+from discord.channel import TextChannel
 from resources import amirightladies as ladies
 from resources import tweet
 from orm.models import Member, Guild
@@ -20,7 +21,7 @@ HUMBLING_PHRASES = set([
     re.compile(r'you.*so.*good'),
     re.compile(r'i.*am.*the.*best'),
     re.compile(r'i.?m.*the.*best'),
-    # re.compile(r'[(i.*am)|(i.?m).*a.*genius]'),
+    re.compile(r'[(i.*am)|(i.?m)].*a.*genius'),
 ])
 
 class Client(discord.Client):
@@ -82,7 +83,7 @@ class Client(discord.Client):
             message = f'Hello Lisa, this is your hourly reminder to watch avatar.\n{url}'
             await channel.send(message) # type: ignore
 
-    async def write_cool_message(self, channel):
+    async def write_cool_message(self, channel: TextChannel) -> None:
         await channel.send(random.choice(ladies.MESSAGE_LIST))
 
 
