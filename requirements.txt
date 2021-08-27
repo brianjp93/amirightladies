@@ -5,7 +5,9 @@
 #    pip-compile requirements.in
 #
 aiohttp==3.7.4.post0
-    # via discord.py
+    # via
+    #   -r requirements.in
+    #   discord.py
 async-timeout==3.0.1
     # via aiohttp
 attrs==21.2.0
@@ -47,7 +49,7 @@ requests-oauthlib==1.3.0
     # via python-twitter
 sqlalchemy==1.4.23
     # via sqlmodel
-sqlalchemy2-stubs==0.0.2a12
+sqlalchemy2-stubs==0.0.2a14
     # via sqlmodel
 sqlmodel==0.0.4
     # via -r requirements.in

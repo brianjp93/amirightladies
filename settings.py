@@ -15,4 +15,6 @@ TWITTER_API_TOKEN: str = os.environ['TWITTER_API_TOKEN']
 TWITTER_ACCESS_TOKEN: str = os.environ['TWITTER_ACCESS_TOKEN']
 TWITTER_ACCESS_SECRET: str = os.environ['TWITTER_ACCESS_SECRET']
 
+OPEN_WEATHER_KEY: str = os.environ['OPEN_WEATHER_KEY']
+
 DB_URL: str = os.environ['DB_URL']
