@@ -11,6 +11,7 @@ from discord.channel import TextChannel
 from resources import amirightladies as ladies
 from resources import tweet
 from orm.models import Member, Guild
+import app
 
 PREFIX = '~'
 COMMANDS = {
@@ -87,5 +88,7 @@ class Client(discord.Client):
         await channel.send(random.choice(ladies.MESSAGE_LIST))
 
 
-client = Client()
-client.run(settings.TOKEN)
+if __name__ == '__main__':
+    app.build_all()
+    client = Client()
+    client.run(settings.TOKEN)
