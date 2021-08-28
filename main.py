@@ -10,6 +10,7 @@ from discord.ext import tasks
 from discord.message import Message as DMessage
 from discord.member import Member as DMember
 from discord.channel import TextChannel
+from discord.embeds import Embed
 from resources import amirightladies as ladies
 from resources import tweet
 from resources.weather import Weather
@@ -35,6 +36,8 @@ class Client(discord.Client):
         self.avatar_channel = None
         super().__init__(*args, **kwargs)
         self.set_up()
+
+        # commands which start with PREFIX only
         self.COMMANDS = {
             'link': [
                 re.compile(r'link'),
@@ -48,10 +51,14 @@ class Client(discord.Client):
                 re.compile(r'weather (\d{5})'),
                 self.handle_weather_zip
             ],
+        }
+
+        # general message parsing
+        self.GENERALCOMMANDS = {
             'shit': [
-                re.compile(r'(\W|^)shit(\W|$)'),
+                re.compile(r'(.*)?(\W|^)shit(\W|$)(.*)?'),
                 self.handle_shit
-            ]
+            ],
         }
 
     def set_up(self):
@@ -78,13 +85,23 @@ class Client(discord.Client):
                 url = tweet.get_avatar_tweet_url()
                 await message.channel.send(url)
 
-            if message.content.startswith(PREFIX):
+            if content.startswith(PREFIX):
                 await self.handle_command(message)
 
+            await self.handle_general_mesage(message)
             await self.handle_if_humbled(message)
 
-    def handle_shit(self, message: DMessage, match: re.Match):
-        return '💩'
+    async def handle_general_mesage(self, message):
+        content = message.content.lower().strip()
+        for key, (pat, handler) in self.GENERALCOMMANDS.items():
+            if match := pat.match(content):
+                print(match)
+                send_message = await handler(message, match)
+                if send_message[0] or send_message[1]:
+                    await message.channel.send(*send_message[0], **send_message[1])
+
+    async def handle_shit(self, *args):
+        return [['💩'], {}]
 
     async def handle_command(self, message: DMessage) -> None:
         content = message.content[1:].lower().strip()
@@ -93,11 +110,11 @@ class Client(discord.Client):
             if match := pat.match(content):
                 print(match)
                 send_message = await handler(message, match)
-                if send_message:
-                    await message.channel.send(send_message)
+                if send_message[0] or send_message[1]:
+                    await message.channel.send(*send_message[0], **send_message[1])
 
-    async def handle_link(self, *args):
-        return settings.INVITE_LINK
+    async def handle_link(self, *args) -> list:
+        return [[settings.INVITE_LINK], {}]
 
     async def handle_weather_city_state(self, message: DMessage, match: re.Match):
         group = match.groups()
@@ -125,38 +142,44 @@ class Client(discord.Client):
         weather_desc = data['weather'][0]['description']
         return f'{name}, {country} - {temp}F {weather_desc}'
 
-    def verbose_weather_response(self, data: dict) -> str:
+    def verbose_weather_response(self, data: dict) -> list:
+        city = data['name']
+        country = data['sys']['country']
         temp = weather.to_f(data['main']['temp'])
         temp_min = weather.to_f(data['main']['temp_min'])
         temp_max = weather.to_f(data['main']['temp_max'])
-        weather_main = data['weather'][0]['main']
+        # weather_main = data['weather'][0]['main']
         weather_desc = data['weather'][0]['description']
         feels_like = weather.to_f(data['main']['feels_like'])
         pressure = data['main']['pressure']
         humidity = data['main']['humidity']
-        visibility = data['visibility']
+        visibility = float(data['visibility']) / 1000
         tz_offset = int(data['timezone'])
         sunrise = datetime.fromtimestamp(
             int(data['sys']['sunrise']) + tz_offset,
             tz=pytz.UTC
-        ).strftime('%I:%M %p')
+        ).strftime('%-I:%M %p')
         sunset = datetime.fromtimestamp(
             int(data['sys']['sunset']) + tz_offset,
             tz=pytz.UTC
-        ).strftime('%I:%M %p')
-        lines = [
-            '```',
-            f'{data["name"]}, {data["sys"]["country"]}',
-            f'{temp}F --- {temp_min}/{temp_max}F',
-            f'{weather_main}, {weather_desc}',
-            f'Feels Like: {feels_like}',
-            f'Humidity: {humidity}',
-            f'Pressure: {pressure}',
-            f'Visibility: {visibility}',
-            f'Sunrise/Sunset: {sunrise} / {sunset}',
-            '```',
-        ]
-        return '\n'.join(lines)
+        ).strftime('%-I:%M %p')
+        embed = Embed()
+        embed.add_field(
+            name='Temperature',
+            value=f'{temp}F\n{temp_max} hi / {temp_min} lo\nFeels like: {feels_like}F',
+        )
+        embed.add_field(
+            name='Other',
+            value=f'Humidity: {humidity}%\nPressure: {pressure}hPa\nVisibility: {visibility:.1f}km'
+        )
+        embed.add_field(
+            name='Sunrise / Sunset',
+            value=f'{sunrise} / {sunset}'
+        )
+        embed.description = f'{weather_desc}'
+        embed.title = f'{city}, {country} - {temp}F'
+        embed.set_author(name='OpenWeather', url=f'https://openweathermap.org/find?q={city},{country}')
+        return [[], {'embed': embed}]
 
     async def handle_if_humbled(self, message: DMessage) -> None:
         content = message.content.lower()
