@@ -2,5 +2,6 @@ aiohttp
 discord.py
 python-dotenv
 python-twitter
+pytz==2021.1
 requests
 sqlmodel==0.0.4

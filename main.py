@@ -1,6 +1,7 @@
 from datetime import datetime
 import random
 import re
+import pytz
 
 import discord
 import settings
@@ -13,6 +14,7 @@ from resources import amirightladies as ladies
 from resources import tweet
 from resources.weather import Weather
 from orm.models import Member, Guild
+
 import app
 
 PREFIX = '~'
@@ -133,8 +135,15 @@ class Client(discord.Client):
         pressure = data['main']['pressure']
         humidity = data['main']['humidity']
         visibility = data['visibility']
-        sunrise = datetime.fromtimestamp(data['sys']['sunrise']).strftime('%I:%M %p')
-        sunset = datetime.fromtimestamp(data['sys']['sunset']).strftime('%I:%M %p')
+        tz_offset = int(data['timezone'])
+        sunrise = datetime.fromtimestamp(
+            int(data['sys']['sunrise']) + tz_offset,
+            tz=pytz.UTC
+        ).strftime('%I:%M %p')
+        sunset = datetime.fromtimestamp(
+            int(data['sys']['sunset']) + tz_offset,
+            tz=pytz.UTC
+        ).strftime('%I:%M %p')
         lines = [
             '```',
             f'{data["name"]}, {data["sys"]["country"]}',
