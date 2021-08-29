@@ -1,11 +1,10 @@
 from datetime import datetime
+import pytz
 import random
 import re
-import pytz
-
-import discord
 import settings
 
+import discord
 from discord.ext import tasks
 from discord.message import Message as DMessage
 from discord.member import Member as DMember
@@ -15,8 +14,8 @@ from resources import amirightladies as ladies
 from resources import tweet
 from resources.weather import Weather
 from orm.models import Member, Guild
-
 import app
+
 
 PREFIX = '~'
 COMMANDS = {
@@ -114,6 +113,7 @@ class Client(discord.Client):
                     await message.channel.send(*send_message[0], **send_message[1])
 
     async def handle_link(self, *args) -> list:
+        1 / 0
         return [[settings.INVITE_LINK], {}]
 
     async def handle_weather_city_state(self, message: DMessage, match: re.Match):
@@ -203,4 +203,12 @@ class Client(discord.Client):
 if __name__ == '__main__':
     app.build_all()
     client = Client()
+    settings.use_sentry(
+        client,
+        dsn=settings.SENTRY_URI,
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        # We recommend adjusting this value in production.
+        traces_sample_rate=1.0
+    )
     client.run(settings.TOKEN)

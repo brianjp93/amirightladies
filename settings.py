@@ -1,5 +1,8 @@
 from dotenv import load_dotenv
 import os
+import sentry_sdk
+
+
 load_dotenv()
 
 TOKEN: str = os.environ['TOKEN']
@@ -15,6 +18,24 @@ TWITTER_API_TOKEN: str = os.environ['TWITTER_API_TOKEN']
 TWITTER_ACCESS_TOKEN: str = os.environ['TWITTER_ACCESS_TOKEN']
 TWITTER_ACCESS_SECRET: str = os.environ['TWITTER_ACCESS_SECRET']
 
+SENTRY_URI: str = os.environ['SENTRY_URI']
+
 OPEN_WEATHER_KEY: str = os.environ['OPEN_WEATHER_KEY']
 
 DB_URL: str = os.environ['DB_URL']
+
+# https://github.com/RDIL/bluejay/blob/master/discord-sentry-reporting/discord_sentry_reporting/__init__.py
+def use_sentry(client, **sentry_args):
+    """
+    Use this compatibility library as a bridge between Discord and Sentry.
+    Arguments:
+        client: The Discord client object (e.g. `discord.AutoShardedClient`).
+        sentry_args: Keyword arguments to pass to the Sentry SDK.
+    """
+    sentry_sdk.init(**sentry_args)
+
+    @client.event
+    async def on_error(event, *args, **kwargs):
+        """Don't ignore the error, causing Sentry to capture it."""
+        raise
+
