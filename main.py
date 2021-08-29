@@ -133,6 +133,8 @@ class Client(discord.Client):
         zip = match.groups()[0]
         data = await weather.get_current_weather(zip=zip)
         json = data['json']
+        if json['cod'] == '404':
+            return [['That city could not be found.'], {}]
         return self.verbose_weather_response(json)
 
     def short_weather_response(self, data: dict) -> str:
