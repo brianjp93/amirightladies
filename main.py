@@ -178,7 +178,10 @@ class Client(discord.Client):
         )
         embed.description = f'{weather_desc}'
         embed.title = f'{city}, {country} - {temp}F'
-        embed.set_author(name='OpenWeather', url=f'https://openweathermap.org/find?q={city},{country}')
+        embed.set_author(
+            name='OpenWeather',
+            url=f'https://openweathermap.org/find?q={city.replace(" ", "%20")},{country}'
+        )
         return [[], {'embed': embed}]
 
     async def handle_if_humbled(self, message: DMessage) -> None:
