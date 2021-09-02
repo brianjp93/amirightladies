@@ -3,12 +3,14 @@ import pytz
 import random
 import re
 import settings
+from typing import Union
+from aiohttp import ClientSession
 
 import discord
 from discord.ext import tasks
 from discord.message import Message as DMessage
 from discord.member import Member as DMember
-from discord.channel import TextChannel
+from discord.channel import TextChannel, DMChannel, GroupChannel
 from discord.embeds import Embed
 from resources import amirightladies as ladies
 from resources import tweet
@@ -28,7 +30,10 @@ HUMBLING_PHRASES = set([
     re.compile(r'i.?m.*the.*best'),
     re.compile(r'[(i.*am)|(i.?m)].*a.*genius'),
 ])
+BULLET = '•'
 weather = Weather(settings.OPEN_WEATHER_KEY)
+
+DICTIONARYURL = 'https://api.dictionaryapi.dev/api/v2/entries/en/{word}'
 
 class Client(discord.Client):
     def __init__(self, *args, **kwargs):
@@ -49,6 +54,10 @@ class Client(discord.Client):
             'weather (zip)': [
                 re.compile(r'weather (\d{5})'),
                 self.handle_weather_zip
+            ],
+            'define': [
+                re.compile(r'def(?:ine)? (.*)'),
+                self.handle_define
             ],
         }
 
@@ -113,8 +122,34 @@ class Client(discord.Client):
                     await message.channel.send(*send_message[0], **send_message[1])
 
     async def handle_link(self, *args) -> list:
-        1 / 0
         return [[settings.INVITE_LINK], {}]
+
+    async def handle_define(self, message: DMessage, match: re.Match):
+        word = match.groups()[0].strip()
+        print(f'Trying to define word: {word}')
+        async with ClientSession() as session:
+            async with session.get(DICTIONARYURL.format(**{'word': word})) as response:
+                print(response)
+                if response.status == 404:
+                    return [[f'Couldn\'t find a definition for {word}'], {}]
+                data = await response.json()
+                embed = Embed()
+                embed.title = f'Definitions for: {word}'
+                embed.description = f''
+                for result in data:
+                    origin = 'Origin: ' + result.get('origin', '?NA?')
+                    embed.add_field(name=f"__{result['word']}__", value=f'{origin}', inline=False)
+                    for pos in result['meanings']:
+                        definitions = []
+                        for x in pos['definitions']:
+                            out = [f'{BULLET} {x["definition"]}']
+                            if example := x.get('example'):
+                                out.append(f'\t{BULLET} {BULLET} **Example**: *{example}*')
+                            definitions.append('\n'.join(out))
+
+                        embed.add_field(name=pos['partOfSpeech'], value='\n\n'.join(definitions))
+                return [[], {'embed': embed}]
+
 
     async def handle_weather_city_state(self, message: DMessage, match: re.Match):
         group = match.groups()
@@ -147,6 +182,9 @@ class Client(discord.Client):
         return f'{name}, {country} - {temp}F {weather_desc}'
 
     def verbose_weather_response(self, data: dict) -> list:
+        lat = data['coord']['lat']
+        lon = data['coord']['lon']
+        map_url = f'https://www.google.com/maps/@{lat},{lon},15.00z'
         city = data['name']
         country = data['sys']['country']
         temp = weather.to_f(data['main']['temp'])
@@ -178,9 +216,9 @@ class Client(discord.Client):
         )
         embed.add_field(
             name='Sunrise / Sunset',
-            value=f'{sunrise} / {sunset}'
+            value=f'{sunrise} / {sunset}',
         )
-        embed.description = f'{weather_desc}'
+        embed.description = f'{weather_desc}\n[google maps]({map_url})'
         embed.title = f'{city}, {country} - {temp}F'
         embed.set_author(
             name='OpenWeather',
@@ -203,7 +241,10 @@ class Client(discord.Client):
             message = f'Hello Lisa, this is your hourly reminder to watch avatar.\n{url}'
             await channel.send(message) # type: ignore
 
-    async def write_cool_message(self, channel: TextChannel) -> None:
+    async def write_cool_message(
+        self,
+        channel: Union[TextChannel, DMChannel, GroupChannel]
+    ) -> None:
         await channel.send(random.choice(ladies.MESSAGE_LIST))
 
 

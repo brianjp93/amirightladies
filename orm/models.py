@@ -1,6 +1,7 @@
 from typing import Optional, List, Union
 from sqlmodel import SQLModel, Field, Relationship, select, Session
 from discord.member import Member as DMember
+from discord.user import User as DUser
 from discord.guild import Guild as DGuild
 from db import engine
 
@@ -31,29 +32,31 @@ class Member(SQLModel, table=True):
     guilds: List[Guild] = Relationship(back_populates="members", link_model=MemberGuildLink)
 
     @staticmethod
-    def create_from_member(member: DMember) -> Union['Member', None]:
+    def create_from_member(member: Union[DMember, DUser]) -> Union['Member', None]:
         """Creates / Updates Member and associated Guild.
         """
-        member_id = getattr(member, 'id', None)
+        member_id = member.id
         with Session(engine) as session:
-            guild: DGuild = member.guild
-            statement = select(Guild).where(Guild.exid == guild.id)
-            print('Searching for existing guild.')
-            new_guild = session.exec(statement).first()
-            if not new_guild:
-                print('Creating new guild.')
-                new_guild = Guild(exid=guild.id)
-            session.add(new_guild)
-            session.commit()
+            guild: Union[DGuild, None] = getattr(member, 'guild')
+            new_guild = None
+            if guild:
+                statement = select(Guild).where(Guild.exid == guild.id)
+                print('Searching for existing guild.')
+                new_guild = session.exec(statement).first()
+                if not new_guild:
+                    print('Creating new guild.')
+                    new_guild = Guild(exid=guild.id)
+                session.add(new_guild)
+                session.commit()
 
             new_member = session.exec(
                 select(Member).where(Member.exid == member_id)
             ).first()
             update = {
-                "name": getattr(member, 'name', ''),
-                "discriminator": getattr(member, 'discriminator', ''),
-                "bot": getattr(member, 'bot', False),
-                "nick": member.nick,
+                "name": member.name,
+                "discriminator": member.discriminator,
+                "bot": member.bot,
+                "nick": getattr(member, 'nick', ''),
             }
             if new_member:
                 print('Updating member.')
@@ -66,7 +69,7 @@ class Member(SQLModel, table=True):
                     **update,
                 )
 
-            if new_member:
+            if new_member and new_guild:
                 new_member.guilds.extend([new_guild] or [])
             session.add(new_member)
             session.commit()
