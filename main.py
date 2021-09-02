@@ -59,6 +59,10 @@ class Client(discord.Client):
                 re.compile(r'def(?:ine)? (.*)'),
                 self.handle_define
             ],
+            'urban': [
+                re.compile(r'urban (.*)'),
+                self.handle_urban,
+            ],
         }
 
         # general message parsing
@@ -150,6 +154,38 @@ class Client(discord.Client):
                         embed.add_field(name=pos['partOfSpeech'], value='\n\n'.join(definitions))
                 return [[], {'embed': embed}]
 
+    async def handle_urban(self, message: DMessage, match: re.Match):
+        word = match.groups()[0].strip()
+        print(f'Trying to define word: {word}')
+        url = 'https://mashape-community-urban-dictionary.p.rapidapi.com/define'
+        headers = {
+            'x-rapidapi-host': settings.RAPIDAPI_HOST,
+            'x-rapidapi-key': settings.RAPIDAPI_KEY,
+        }
+        async with ClientSession() as session:
+            async with session.get(url=url, params={'term': word}, headers=headers) as response:
+                print(response)
+                data = await response.json()
+                print(data)
+                embed = Embed()
+                embed.title = f'Urban Dictionary: __{word}__'
+                definitions = []
+                data['list'].sort(key=lambda x: -x['thumbs_up'])
+                for item in data['list'][:3]:
+                    defi = item['definition']
+                    defi = defi.replace('[', '').replace(']', '')
+                    if len(defi) > 100:
+                        defi = defi[:100] + '...'
+                    out = [f'{BULLET} {defi}']
+                    if example := item['example']:
+                        example = example.replace('[', '').replace(']', '')
+                        if len(example) > 100:
+                            example = f'{example[:100]}...'
+                        out.append(f'{BULLET} {BULLET} Example: *{example}*')
+                    definitions.append('\n'.join(out))
+                embed.add_field(name='Definitions', value='\n\n'.join(definitions), inline=False)
+                embed.url = f'https://www.urbandictionary.com/define.php?term={word}'
+                return [[], {'embed': embed}]
 
     async def handle_weather_city_state(self, message: DMessage, match: re.Match):
         group = match.groups()

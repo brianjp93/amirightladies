@@ -20,6 +20,9 @@ TWITTER_ACCESS_SECRET: str = os.environ['TWITTER_ACCESS_SECRET']
 
 SENTRY_URI: str = os.environ['SENTRY_URI']
 
+RAPIDAPI_HOST: str = os.environ['RAPIDAPI_HOST']
+RAPIDAPI_KEY: str = os.environ['RAPIDAPI_KEY']
+
 OPEN_WEATHER_KEY: str = os.environ['OPEN_WEATHER_KEY']
 
 DB_URL: str = os.environ['DB_URL']
