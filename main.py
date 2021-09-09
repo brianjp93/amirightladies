@@ -170,6 +170,8 @@ class Client(discord.Client):
                 embed = Embed()
                 embed.title = f'Urban Dictionary: __{word}__'
                 definitions = []
+                if len(data['list']) == 0:
+                    return [[f'Could not find a definition for {word} on urban dictionary.'], {}]
                 data['list'].sort(key=lambda x: -x['thumbs_up'])
                 for item in data['list'][:3]:
                     defi = item['definition']
