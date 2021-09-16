@@ -57,12 +57,17 @@ requests==2.26.0
     #   -r requirements.in
     #   python-twitter
     #   requests-oauthlib
+    #   spotipy
 requests-oauthlib==1.3.0
     # via python-twitter
 sentry-sdk==1.3.1
     # via -r requirements.in
 six==1.16.0
-    # via pynacl
+    # via
+    #   pynacl
+    #   spotipy
+spotipy==2.19.0
+    # via -r requirements.in
 sqlalchemy==1.4.23
     # via sqlmodel
 sqlalchemy2-stubs==0.0.2a15
@@ -78,5 +83,6 @@ urllib3==1.26.6
     # via
     #   requests
     #   sentry-sdk
+    #   spotipy
 yarl==1.6.3
     # via aiohttp
