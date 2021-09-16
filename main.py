@@ -201,6 +201,9 @@ class Client(discord.Client):
                         await self.play_songs(vc, message)
                     except discord.ClientException as e:
                         print(e)
+                        vc = self.vc_by_guild.get(message.guild.id)
+                        if vc:
+                            await self.play_songs(vc, message)
             else:
                 await message.channel.send('Could not find song')
         return [[], {}]
