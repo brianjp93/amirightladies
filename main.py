@@ -5,8 +5,7 @@ import re
 import settings
 from typing import Union
 from aiohttp import ClientSession
-from sqlmodel import Session, select
-from db import engine
+from sqlmodel import select
 from typing import Optional, Dict
 
 from asyncio import sleep
@@ -14,19 +13,19 @@ from asyncio import sleep
 import discord
 from discord.ext import tasks
 from discord.message import Message as DMessage
-from discord.member import Member as DMember
 from discord.channel import TextChannel, DMChannel, GroupChannel
 from discord.embeds import Embed
 from resources import amirightladies as ladies
 from resources import tweet
 from resources.weather import Weather
 from resources.yt import Yt
-from orm.models import Member, Guild, Song
+from resources import spotify
+from orm.models import Member, Guild, Song, HistorySong
 import app
 from app import session
 
 
-PREFIX = '~'
+PREFIX = '.'
 COMMANDS = {
     'link': 'link',
 }
@@ -72,17 +71,21 @@ class Client(discord.Client):
                 re.compile(r'urban (.*)'),
                 self.handle_urban,
             ],
-            'play': [
+            'play-search': [
                 re.compile(r'play (.*)'),
-                self.handle_play_from_search,
+                self.handle_play_from_sources,
             ],
             'skip': [
                 re.compile(r'(?:(?:skip)|(?:next))'),
                 self.handle_skip,
             ],
             'queue': [
-                re.compile(r'^queue$'),
+                re.compile(r'queue'),
                 self.handle_queue,
+            ],
+            'history': [
+                re.compile(r'history'),
+                self.handle_history,
             ]
         }
 
@@ -108,14 +111,40 @@ class Client(discord.Client):
             if guild:
                 return guild
 
+    async def handle_history(self, message, match):
+        if guild := await self.get_guild_from_dguild(message.guild):
+            hs = session.exec(
+                select(HistorySong).where(
+                    HistorySong.guild==guild
+                ).order_by(HistorySong.created_at.desc())
+            ).fetchmany(10)
+            embed = Embed()
+            output = []
+            for i, x in enumerate(hs):
+                if x.song:
+                    title = x.song.title[:30]
+                    if len(x.song.title) > 30:
+                        title += '...'
+                    output.append(f'{i + 1}. [{title}]({x.song.url})')
+            output = '\n'.join(output)
+            embed.add_field(name='History', value=output)
+            return [[], {'embed': embed}]
+
     async def handle_queue(self, message: discord.Message, match: re.Match):
         if guild := await self.get_guild_from_dguild(message.guild):
-            q = []
             songs = session.exec(
                 select(Song).where(Song.guilds.contains(guild))
             ).fetchmany(10)
-            output = '\n'.join(f'{i}. {x.title}' for i, x in enumerate(songs))
-            return [[output], {}]
+            embed = Embed()
+            output = []
+            for i, x in enumerate(songs):
+                title = x.title[:30]
+                if len(x.title) > 30:
+                    title += '...'
+                output.append(f'{i + 1}. [{title}]({x.url})')
+            output = '\n'.join(output)
+            embed.add_field(name='Queue', value=output)
+            return [[], {'embed': embed}]
 
     async def on_message(self, message: DMessage):
         content = message.content.lower()
@@ -150,7 +179,7 @@ class Client(discord.Client):
                 if send_message and (send_message[0] or send_message[1]):
                     await message.channel.send(*send_message[0], **send_message[1])
 
-    async def handle_play_from_search(self, message: discord.Message, match: re.Match):
+    async def handle_play(self, message: discord.Message, match: re.Match, handler):
         assert message.guild
         content = message.content.lower().strip()
         try:
@@ -159,7 +188,8 @@ class Client(discord.Client):
             voice_channel = None
             await message.channel.send("Couldn't find voice channel.")
         if isinstance(voice_channel, discord.VoiceChannel):
-            if song := yt.get_with_search(content):
+            song: Optional[Song]
+            if song := await handler(content):
                 if guild := await self.get_guild_from_dguild(message.guild):
                     session.refresh(guild)
                     guild.songs.append(song)
@@ -169,11 +199,21 @@ class Client(discord.Client):
                         vc = await voice_channel.connect()
                         self.vc_by_guild[message.guild.id] = vc
                         await self.play_songs(vc, message)
-                    except discord.ClientException:
-                        pass
+                    except discord.ClientException as e:
+                        print(e)
             else:
                 await message.channel.send('Could not find song')
         return [[], {}]
+
+    async def handle_play_from_sources(self, message: discord.Message, match: re.Match):
+        if content := match.groups()[0]:
+            if re.match(r'(.*)?youtube.com(.*)?', content):
+                return await self.handle_play(message, match, yt.get_with_url)
+            elif re.match(r'(.*)?spotify(.*)?playlist/([\w\d]+)(.*)?', content):
+                pass
+                # spotify.add_playlist_to_queue(content)
+            else:
+                return await self.handle_play(message, match, yt.get_with_search)
 
     async def play_songs(self, vc: discord.VoiceClient, message: discord.Message):
         if guild := await self.get_guild_from_dguild(message.guild):
@@ -181,6 +221,17 @@ class Client(discord.Client):
             while guild.songs:
                 song = guild.songs[0]
                 vc.play(discord.FFmpegPCMAudio(executable='ffmpeg', source=song.file))
+
+                hs = HistorySong(
+                    song_id=song.id,
+                    guild_id=guild.id,
+                    created_at=int(datetime.now().timestamp()),
+                )
+                session.add(hs)
+                session.commit()
+                guild.history.append(hs)
+                session.commit()
+
                 if message:
                     await message.channel.send(f'Playing song: {song.title}')
                 while vc.is_playing():
@@ -208,7 +259,7 @@ class Client(discord.Client):
         return [['💩'], {}]
 
     async def handle_command(self, message: DMessage) -> None:
-        content = message.content[1:].lower().strip()
+        content = message.content[1:].strip()
 
         for key, (pat, handler) in self.COMMANDS.items():
             if match := pat.match(content):

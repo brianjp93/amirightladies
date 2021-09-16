@@ -16,6 +16,16 @@ class MemberGuildLink(SQLModel, table=True):
     )
 
 
+class HistorySong(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    song_id: Optional[int] = Field(foreign_key='song.id')
+    song: Optional['Song'] = Relationship()
+    created_at: int
+
+    guild_id: Optional[int] = Field(foreign_key='guild.id')
+    guild: Optional['Guild'] = Relationship(back_populates='history')
+
+
 class GuildSongLink(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     song: Optional[int] = Field(
@@ -33,6 +43,7 @@ class Guild(SQLModel, table=True):
 
     members: List["Member"] = Relationship(back_populates="guilds", link_model=MemberGuildLink)
     songs: List['Song'] = Relationship(back_populates='guilds', link_model=GuildSongLink)
+    history: List['HistorySong'] = Relationship(back_populates='guild')
 
 
 class Member(SQLModel, table=True):
@@ -91,6 +102,7 @@ class Member(SQLModel, table=True):
 
 class Song(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
+    # video_id
     stream_id: str = Field(sa_column=Column('stream_id', VARCHAR, unique=True))
     title: str
     url: str

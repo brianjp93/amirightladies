@@ -27,6 +27,9 @@ OPEN_WEATHER_KEY: str = os.environ['OPEN_WEATHER_KEY']
 
 DB_URL: str = os.environ['DB_URL']
 
+SPOTIFY_ID: str = os.environ['SPOTIFY_ID']
+SPOTIFY_SECRET: str = os.environ['SPOTIFY_SECRET']
+
 # https://github.com/RDIL/bluejay/blob/master/discord-sentry-reporting/discord_sentry_reporting/__init__.py
 def use_sentry(client, **sentry_args):
     """
