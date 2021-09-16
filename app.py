@@ -1,5 +1,8 @@
-from sqlmodel import SQLModel
+from sqlmodel import SQLModel, Session
 from db import engine
+
+
+session = Session(engine)
 
 
 def build_all():

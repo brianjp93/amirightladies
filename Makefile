@@ -7,3 +7,4 @@ compile:
 install:
 	pip install -r requirements.txt
 	pip install -r dev.txt
+	sudo apt-get install ffmpeg

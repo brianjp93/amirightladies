@@ -5,6 +5,11 @@ import re
 import settings
 from typing import Union
 from aiohttp import ClientSession
+from sqlmodel import Session, select
+from db import engine
+from typing import Optional, Dict
+
+from asyncio import sleep
 
 import discord
 from discord.ext import tasks
@@ -15,8 +20,10 @@ from discord.embeds import Embed
 from resources import amirightladies as ladies
 from resources import tweet
 from resources.weather import Weather
-from orm.models import Member, Guild
+from resources.yt import Yt
+from orm.models import Member, Guild, Song
 import app
+from app import session
 
 
 PREFIX = '~'
@@ -32,6 +39,7 @@ HUMBLING_PHRASES = set([
 ])
 BULLET = '•'
 weather = Weather(settings.OPEN_WEATHER_KEY)
+yt = Yt()
 
 DICTIONARYURL = 'https://api.dictionaryapi.dev/api/v2/entries/en/{word}'
 
@@ -40,6 +48,7 @@ class Client(discord.Client):
         self.avatar_channel = None
         super().__init__(*args, **kwargs)
         self.set_up()
+        self.vc_by_guild: Dict[int, discord.VoiceClient] = {}
 
         # commands which start with PREFIX only
         self.COMMANDS = {
@@ -63,6 +72,18 @@ class Client(discord.Client):
                 re.compile(r'urban (.*)'),
                 self.handle_urban,
             ],
+            'play': [
+                re.compile(r'play (.*)'),
+                self.handle_play_from_search,
+            ],
+            'skip': [
+                re.compile(r'(?:(?:skip)|(?:next))'),
+                self.handle_skip,
+            ],
+            'queue': [
+                re.compile(r'^queue$'),
+                self.handle_queue,
+            ]
         }
 
         # general message parsing
@@ -78,6 +99,23 @@ class Client(discord.Client):
 
     async def on_ready(self):
         print(f'Logged on as {self.user}')
+
+    async def get_guild_from_dguild(self, dguild: Optional[discord.Guild]):
+        if dguild:
+            guild = session.exec(
+                select(Guild).where(Guild.exid==dguild.id)
+            ).first()
+            if guild:
+                return guild
+
+    async def handle_queue(self, message: discord.Message, match: re.Match):
+        if guild := await self.get_guild_from_dguild(message.guild):
+            q = []
+            songs = session.exec(
+                select(Song).where(Song.guilds.contains(guild))
+            ).fetchmany(10)
+            output = '\n'.join(f'{i}. {x.title}' for i, x in enumerate(songs))
+            return [[output], {}]
 
     async def on_message(self, message: DMessage):
         content = message.content.lower()
@@ -109,8 +147,62 @@ class Client(discord.Client):
             if match := pat.match(content):
                 print(match)
                 send_message = await handler(message, match)
-                if send_message[0] or send_message[1]:
+                if send_message and (send_message[0] or send_message[1]):
                     await message.channel.send(*send_message[0], **send_message[1])
+
+    async def handle_play_from_search(self, message: discord.Message, match: re.Match):
+        assert message.guild
+        content = message.content.lower().strip()
+        try:
+            voice_channel = message.author.voice.channel
+        except:
+            voice_channel = None
+            await message.channel.send("Couldn't find voice channel.")
+        if isinstance(voice_channel, discord.VoiceChannel):
+            if song := yt.get_with_search(content):
+                if guild := await self.get_guild_from_dguild(message.guild):
+                    session.refresh(guild)
+                    guild.songs.append(song)
+                    session.commit()
+                    await message.channel.send(f'Added to queue: {song.title}')
+                    try:
+                        vc = await voice_channel.connect()
+                        self.vc_by_guild[message.guild.id] = vc
+                        await self.play_songs(vc, message)
+                    except discord.ClientException:
+                        pass
+            else:
+                await message.channel.send('Could not find song')
+        return [[], {}]
+
+    async def play_songs(self, vc: discord.VoiceClient, message: discord.Message):
+        if guild := await self.get_guild_from_dguild(message.guild):
+            session.refresh(guild)
+            while guild.songs:
+                song = guild.songs[0]
+                vc.play(discord.FFmpegPCMAudio(executable='ffmpeg', source=song.file))
+                if message:
+                    await message.channel.send(f'Playing song: {song.title}')
+                while vc.is_playing():
+                    await sleep(.5)
+                session.refresh(guild)
+                guild.songs.remove(song)
+                session.commit()
+
+    async def handle_skip(self, message: discord.Message, match):
+        assert message.guild
+        if vc := self.vc_by_guild.get(message.guild.id):
+            vc.stop()
+            if guild := await self.get_guild_from_dguild(message.guild):
+                session.refresh(guild)
+                if guild.songs:
+                    song = guild.songs[0]
+                    guild.songs.remove(song)
+                    session.commit()
+                    if guild.songs:
+                        await self.play_songs(vc, message)
+                    else:
+                        await message.channel.send('No more songs.')
 
     async def handle_shit(self, *args):
         return [['💩'], {}]
@@ -122,7 +214,7 @@ class Client(discord.Client):
             if match := pat.match(content):
                 print(match)
                 send_message = await handler(message, match)
-                if send_message[0] or send_message[1]:
+                if send_message and (send_message[0] or send_message[1]):
                     await message.channel.send(*send_message[0], **send_message[1])
 
     async def handle_link(self, *args) -> list:
@@ -131,8 +223,8 @@ class Client(discord.Client):
     async def handle_define(self, message: DMessage, match: re.Match):
         word = match.groups()[0].strip()
         print(f'Trying to define word: {word}')
-        async with ClientSession() as session:
-            async with session.get(DICTIONARYURL.format(**{'word': word})) as response:
+        async with ClientSession() as client_session:
+            async with client_session.get(DICTIONARYURL.format(**{'word': word})) as response:
                 print(response)
                 if response.status == 404:
                     return [[f'Couldn\'t find a definition for {word}'], {}]
@@ -162,8 +254,8 @@ class Client(discord.Client):
             'x-rapidapi-host': settings.RAPIDAPI_HOST,
             'x-rapidapi-key': settings.RAPIDAPI_KEY,
         }
-        async with ClientSession() as session:
-            async with session.get(url=url, params={'term': word}, headers=headers) as response:
+        async with ClientSession() as client_session:
+            async with client_session.get(url=url, params={'term': word}, headers=headers) as response:
                 print(response)
                 data = await response.json()
                 print(data)

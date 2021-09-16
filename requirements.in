@@ -2,7 +2,9 @@ aiohttp
 discord.py
 python-dotenv
 python-twitter
+git+https://github.com/pytube/pytube
 pytz==2021.1
+PyNaCl
 requests
 sentry-sdk<1.4
 sqlmodel==0.0.4
