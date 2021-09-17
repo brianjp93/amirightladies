@@ -40,6 +40,33 @@ async def play_songs(vc: discord.VoiceClient, message: discord.Message):
             session.commit()
 
 
+
+class HandleEmptyPlay(CommandHandler):
+    pat = r'play'
+
+    async def handle(self):
+        assert self.match
+        assert self.message.guild
+        assert isinstance(self.message.author, discord.Member)
+        if guild := Guild.get_from_discord_guild(self.message.guild):
+            songs = session.exec(
+                select(Song).where(Song.guilds.contains(guild))
+            ).fetchmany(10)
+            if songs:
+                try:
+                    assert self.message.author.voice is not None
+                    vc = await self.message.author.voice.channel.connect()
+                    settings.vc_by_guild[self.message.guild.id] = vc
+                    await play_songs(vc, self.message)
+                except discord.ClientException as e:
+                    print(e)
+                    vc = settings.vc_by_guild.get(self.message.guild.id)
+                    if vc:
+                        await play_songs(vc, self.message)
+            else:
+                return (['The queue is empty.'], {})
+
+
 class HandlePlay(CommandHandler):
     pat = r'play (.*)'
 
@@ -148,3 +175,15 @@ class HandleHistory(CommandHandler):
             output = '\n'.join(output)
             embed.add_field(name='History', value=output)
             return [[], {'embed': embed}]
+
+
+class HandleDisconnect(CommandHandler):
+    pat = r'(?:dc|stop)'
+
+    async def handle(self):
+        assert self.match
+        assert self.message.guild
+        if vc := settings.vc_by_guild.get(self.message.guild.id):
+            if vc.is_playing():
+                vc.stop()
+            await vc.disconnect()
