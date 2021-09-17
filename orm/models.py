@@ -45,6 +45,15 @@ class Guild(SQLModel, table=True):
     songs: List['Song'] = Relationship(back_populates='guilds', link_model=GuildSongLink)
     history: List['HistorySong'] = Relationship(back_populates='guild')
 
+    @classmethod
+    def get_from_discord_guild(cls, dguild: Optional[DGuild]):
+        if dguild:
+            guild = session.exec(
+                select(cls).where(cls.exid==dguild.id)
+            ).first()
+            if guild:
+                return guild
+
 
 class Member(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

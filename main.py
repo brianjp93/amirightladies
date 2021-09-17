@@ -1,34 +1,22 @@
-from datetime import datetime
-import pytz
 import random
 import re
 import settings
 from typing import Union
-from aiohttp import ClientSession
-from sqlmodel import select
-from typing import Optional, Dict
-
-from asyncio import sleep
+from typing import Dict
 
 import discord
 from discord.ext import tasks
 from discord.message import Message as DMessage
 from discord.channel import TextChannel, DMChannel, GroupChannel
-from discord.embeds import Embed
 from resources import amirightladies as ladies
 from resources import tweet
-from resources.weather import Weather
-from resources.yt import Yt
 from resources import spotify
-from orm.models import Member, Guild, Song, HistorySong
+from orm.models import Member
+import command_handlers as ch
 import app
-from app import session
 
 
 PREFIX = '.'
-COMMANDS = {
-    'link': 'link',
-}
 HUMBLING_PHRASES = set([
     re.compile(r'you.*best'),
     re.compile(r'you.*so.*good'),
@@ -36,11 +24,7 @@ HUMBLING_PHRASES = set([
     re.compile(r'i.?m.*the.*best'),
     re.compile(r'[(i.*am)|(i.?m)].*a.*genius'),
 ])
-BULLET = '•'
-weather = Weather(settings.OPEN_WEATHER_KEY)
-yt = Yt()
 
-DICTIONARYURL = 'https://api.dictionaryapi.dev/api/v2/entries/en/{word}'
 
 class Client(discord.Client):
     def __init__(self, *args, **kwargs):
@@ -48,46 +32,6 @@ class Client(discord.Client):
         super().__init__(*args, **kwargs)
         self.set_up()
         self.vc_by_guild: Dict[int, discord.VoiceClient] = {}
-
-        # commands which start with PREFIX only
-        self.COMMANDS = {
-            'link': [
-                re.compile(r'link'),
-                self.handle_link
-            ],
-            'weather (city/state)': [
-                re.compile(r'weather ([A-z\s]+),?\s?([A-z]+)?'),
-                self.handle_weather_city_state
-            ],
-            'weather (zip)': [
-                re.compile(r'weather (\d{5})'),
-                self.handle_weather_zip
-            ],
-            'define': [
-                re.compile(r'def(?:ine)? (.*)'),
-                self.handle_define
-            ],
-            'urban': [
-                re.compile(r'urban (.*)'),
-                self.handle_urban,
-            ],
-            'play-search': [
-                re.compile(r'play (.*)'),
-                self.handle_play_from_sources,
-            ],
-            'skip': [
-                re.compile(r'(?:(?:skip)|(?:next))'),
-                self.handle_skip,
-            ],
-            'queue': [
-                re.compile(r'queue'),
-                self.handle_queue,
-            ],
-            'history': [
-                re.compile(r'history'),
-                self.handle_history,
-            ]
-        }
 
         # general message parsing
         self.GENERALCOMMANDS = {
@@ -102,49 +46,6 @@ class Client(discord.Client):
 
     async def on_ready(self):
         print(f'Logged on as {self.user}')
-
-    async def get_guild_from_dguild(self, dguild: Optional[discord.Guild]):
-        if dguild:
-            guild = session.exec(
-                select(Guild).where(Guild.exid==dguild.id)
-            ).first()
-            if guild:
-                return guild
-
-    async def handle_history(self, message, match):
-        if guild := await self.get_guild_from_dguild(message.guild):
-            hs = session.exec(
-                select(HistorySong).where(
-                    HistorySong.guild==guild
-                ).order_by(HistorySong.created_at.desc())
-            ).fetchmany(10)
-            embed = Embed()
-            output = []
-            for i, x in enumerate(hs):
-                if x.song:
-                    title = x.song.title[:30]
-                    if len(x.song.title) > 30:
-                        title += '...'
-                    output.append(f'{i + 1}. [{title}]({x.song.url})')
-            output = '\n'.join(output)
-            embed.add_field(name='History', value=output)
-            return [[], {'embed': embed}]
-
-    async def handle_queue(self, message: discord.Message, match: re.Match):
-        if guild := await self.get_guild_from_dguild(message.guild):
-            songs = session.exec(
-                select(Song).where(Song.guilds.contains(guild))
-            ).fetchmany(10)
-            embed = Embed()
-            output = []
-            for i, x in enumerate(songs):
-                title = x.title[:30]
-                if len(x.title) > 30:
-                    title += '...'
-                output.append(f'{i + 1}. [{title}]({x.url})')
-            output = '\n'.join(output)
-            embed.add_field(name='Queue', value=output)
-            return [[], {'embed': embed}]
 
     async def on_message(self, message: DMessage):
         content = message.content.lower()
@@ -179,236 +80,16 @@ class Client(discord.Client):
                 if send_message and (send_message[0] or send_message[1]):
                     await message.channel.send(*send_message[0], **send_message[1])
 
-    async def handle_play(self, message: discord.Message, match: re.Match, handler):
-        assert message.guild
-        content = message.content.lower().strip()
-        try:
-            voice_channel = message.author.voice.channel
-        except:
-            voice_channel = None
-            await message.channel.send("Couldn't find voice channel.")
-        if isinstance(voice_channel, discord.VoiceChannel):
-            song: Optional[Song]
-            if song := await handler(content):
-                if guild := await self.get_guild_from_dguild(message.guild):
-                    session.refresh(guild)
-                    guild.songs.append(song)
-                    session.commit()
-                    await message.channel.send(f'Added to queue: {song.title}')
-                    try:
-                        vc = await voice_channel.connect()
-                        self.vc_by_guild[message.guild.id] = vc
-                        await self.play_songs(vc, message)
-                    except discord.ClientException as e:
-                        print(e)
-                        vc = self.vc_by_guild.get(message.guild.id)
-                        if vc:
-                            await self.play_songs(vc, message)
-            else:
-                await message.channel.send('Could not find song')
-        return [[], {}]
-
-    async def handle_play_from_sources(self, message: discord.Message, match: re.Match):
-        if content := match.groups()[0]:
-            if re.match(r'(.*)?youtube.com(.*)?', content):
-                return await self.handle_play(message, match, yt.get_with_url)
-            elif re.match(r'(.*)?spotify(.*)?playlist/([\w\d]+)(.*)?', content):
-                pass
-                # spotify.add_playlist_to_queue(content)
-            else:
-                return await self.handle_play(message, match, yt.get_with_search)
-
-    async def play_songs(self, vc: discord.VoiceClient, message: discord.Message):
-        if guild := await self.get_guild_from_dguild(message.guild):
-            session.refresh(guild)
-            while guild.songs:
-                song = guild.songs[0]
-                vc.play(discord.FFmpegPCMAudio(executable='ffmpeg', source=song.file))
-
-                hs = HistorySong(
-                    song_id=song.id,
-                    guild_id=guild.id,
-                    created_at=int(datetime.now().timestamp()),
-                )
-                session.add(hs)
-                session.commit()
-                guild.history.append(hs)
-                session.commit()
-
-                if message:
-                    await message.channel.send(f'Playing song: {song.title}')
-                while vc.is_playing():
-                    await sleep(.5)
-                session.refresh(guild)
-                guild.songs.remove(song)
-                session.commit()
-
-    async def handle_skip(self, message: discord.Message, match):
-        assert message.guild
-        if vc := self.vc_by_guild.get(message.guild.id):
-            vc.stop()
-            if guild := await self.get_guild_from_dguild(message.guild):
-                session.refresh(guild)
-                if guild.songs:
-                    song = guild.songs[0]
-                    guild.songs.remove(song)
-                    session.commit()
-                    if guild.songs:
-                        await self.play_songs(vc, message)
-                    else:
-                        await message.channel.send('No more songs.')
-
     async def handle_shit(self, *args):
         return [['💩'], {}]
 
     async def handle_command(self, message: DMessage) -> None:
-        content = message.content[1:].strip()
-
-        for key, (pat, handler) in self.COMMANDS.items():
-            if match := pat.match(content):
-                print(match)
-                send_message = await handler(message, match)
+        for handler in ch.all_commands:
+            h = handler(message)
+            if h.is_match():
+                send_message = await h.handle()
                 if send_message and (send_message[0] or send_message[1]):
                     await message.channel.send(*send_message[0], **send_message[1])
-
-    async def handle_link(self, *args) -> list:
-        return [[settings.INVITE_LINK], {}]
-
-    async def handle_define(self, message: DMessage, match: re.Match):
-        word = match.groups()[0].strip()
-        print(f'Trying to define word: {word}')
-        async with ClientSession() as client_session:
-            async with client_session.get(DICTIONARYURL.format(**{'word': word})) as response:
-                print(response)
-                if response.status == 404:
-                    return [[f'Couldn\'t find a definition for {word}'], {}]
-                data = await response.json()
-                embed = Embed()
-                embed.title = f'Definitions for: {word}'
-                embed.description = f''
-                for result in data:
-                    origin = 'Origin: ' + result.get('origin', '?NA?')
-                    embed.add_field(name=f"__{result['word']}__", value=f'{origin}', inline=False)
-                    for pos in result['meanings']:
-                        definitions = []
-                        for x in pos['definitions']:
-                            out = [f'{BULLET} {x["definition"]}']
-                            if example := x.get('example'):
-                                out.append(f'\t{BULLET} {BULLET} **Example**: *{example}*')
-                            definitions.append('\n'.join(out))
-
-                        embed.add_field(name=pos['partOfSpeech'], value='\n\n'.join(definitions))
-                return [[], {'embed': embed}]
-
-    async def handle_urban(self, message: DMessage, match: re.Match):
-        word = match.groups()[0].strip()
-        print(f'Trying to define word: {word}')
-        url = 'https://mashape-community-urban-dictionary.p.rapidapi.com/define'
-        headers = {
-            'x-rapidapi-host': settings.RAPIDAPI_HOST,
-            'x-rapidapi-key': settings.RAPIDAPI_KEY,
-        }
-        async with ClientSession() as client_session:
-            async with client_session.get(url=url, params={'term': word}, headers=headers) as response:
-                print(response)
-                data = await response.json()
-                print(data)
-                embed = Embed()
-                embed.title = f'Urban Dictionary: __{word}__'
-                definitions = []
-                if len(data['list']) == 0:
-                    return [[f'Could not find a definition for {word} on urban dictionary.'], {}]
-                data['list'].sort(key=lambda x: -x['thumbs_up'])
-                for item in data['list'][:3]:
-                    defi = item['definition']
-                    defi = defi.replace('[', '').replace(']', '')
-                    if len(defi) > 100:
-                        defi = defi[:100] + '...'
-                    out = [f'{BULLET} {defi}']
-                    if example := item['example']:
-                        example = example.replace('[', '').replace(']', '')
-                        if len(example) > 100:
-                            example = f'{example[:100]}...'
-                        out.append(f'{BULLET} {BULLET} Example: *{example}*')
-                    definitions.append('\n'.join(out))
-                embed.add_field(name='Definitions', value='\n\n'.join(definitions), inline=False)
-                embed.url = f'https://www.urbandictionary.com/define.php?term={word}'
-                return [[], {'embed': embed}]
-
-    async def handle_weather_city_state(self, message: DMessage, match: re.Match):
-        group = match.groups()
-        print(group)
-        city = state = None
-        if len(group) == 1:
-            city = group[0]
-        elif len(group) == 2:
-            city, state = group
-        data = await weather.get_current_weather(city=city, state=state)
-        json = data['json']
-        if json['cod'] == '404':
-            return [['That city could not be found.'], {}]
-        return self.verbose_weather_response(json)
-
-    async def handle_weather_zip(self, message: DMessage, match: re.Match):
-        print(match.groups())
-        zip = match.groups()[0]
-        data = await weather.get_current_weather(zip=zip)
-        json = data['json']
-        if json['cod'] == '404':
-            return [['That city could not be found.'], {}]
-        return self.verbose_weather_response(json)
-
-    def short_weather_response(self, data: dict) -> str:
-        name = data["name"]
-        country = data["sys"]["country"]
-        temp = weather.to_f(data['main']['temp'])
-        weather_desc = data['weather'][0]['description']
-        return f'{name}, {country} - {temp}F {weather_desc}'
-
-    def verbose_weather_response(self, data: dict) -> list:
-        lat = data['coord']['lat']
-        lon = data['coord']['lon']
-        map_url = f'https://www.google.com/maps/@{lat},{lon},15.00z'
-        city = data['name']
-        country = data['sys']['country']
-        temp = weather.to_f(data['main']['temp'])
-        temp_min = weather.to_f(data['main']['temp_min'])
-        temp_max = weather.to_f(data['main']['temp_max'])
-        # weather_main = data['weather'][0]['main']
-        weather_desc = data['weather'][0]['description']
-        feels_like = weather.to_f(data['main']['feels_like'])
-        pressure = data['main']['pressure']
-        humidity = data['main']['humidity']
-        visibility = float(data['visibility']) / 1000
-        tz_offset = int(data['timezone'])
-        sunrise = datetime.fromtimestamp(
-            int(data['sys']['sunrise']) + tz_offset,
-            tz=pytz.UTC
-        ).strftime('%-I:%M %p')
-        sunset = datetime.fromtimestamp(
-            int(data['sys']['sunset']) + tz_offset,
-            tz=pytz.UTC
-        ).strftime('%-I:%M %p')
-        embed = Embed()
-        embed.add_field(
-            name='Temperature',
-            value=f'{temp}F\n{temp_max} hi / {temp_min} lo\nFeels like: {feels_like}F',
-        )
-        embed.add_field(
-            name='Other',
-            value=f'Humidity: {humidity}%\nPressure: {pressure}hPa\nVisibility: {visibility:.1f}km'
-        )
-        embed.add_field(
-            name='Sunrise / Sunset',
-            value=f'{sunrise} / {sunset}',
-        )
-        embed.description = f'{weather_desc}\n[google maps]({map_url})'
-        embed.title = f'{city}, {country} - {temp}F'
-        embed.set_author(
-            name='OpenWeather',
-            url=f'https://openweathermap.org/find?q={city.replace(" ", "%20")},{country}'
-        )
-        return [[], {'embed': embed}]
 
     async def handle_if_humbled(self, message: DMessage) -> None:
         content = message.content.lower()
