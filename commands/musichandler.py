@@ -79,6 +79,8 @@ class HandlePlay(CommandHandler):
             elif re.match(r'(.*)?spotify(.*)?playlist/([\w\d]+)(.*)?', content):
                 pass
                 # spotify.add_playlist_to_queue(content)
+            elif re.match(r'(.*)?spotify(.*)?track/([\w\d]+)(.*)?', content):
+                pass
             else:
                 return await self.handle_general(yt.get_with_search)
 

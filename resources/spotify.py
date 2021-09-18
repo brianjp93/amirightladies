@@ -19,3 +19,15 @@ def get_playlist_tracks(q: str):
         r = api.playlist(playlist_id)
         if r:
             return (item['track'] for item in r['tracks']['items'])
+
+
+def get_track(q: str):
+    track_id = None
+    if match := re.search(r'track/([\w\d]+)', q):
+        track_id = match.groups()[0]
+    elif match := re.match(r'[\w\d]+', q):
+        track_id = q
+
+    if track_id:
+        r = api.track(track_id)
+        return r
