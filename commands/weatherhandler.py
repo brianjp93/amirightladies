@@ -1,13 +1,15 @@
-from .general import CommandHandler
+from .general import CommandHandler, prefix_command
 from datetime import datetime
 from resources.weather import Weather
 from discord import Embed
 import pytz
 import settings
 
+
 weather = Weather(settings.OPEN_WEATHER_KEY)
 
 
+@prefix_command
 class HandleWeatherCityState(CommandHandler):
     pat = r'weather ([A-z\s]+),?\s?([A-z]+)?'
 
@@ -27,6 +29,7 @@ class HandleWeatherCityState(CommandHandler):
         return verbose_weather_response(json)
 
 
+@prefix_command
 class HandleWeatherZip(CommandHandler):
     pat = r'weather (\d{5})'
 

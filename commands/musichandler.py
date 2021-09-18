@@ -1,4 +1,4 @@
-from .general import CommandHandler
+from .general import CommandHandler, prefix_command
 import discord
 import re
 import settings
@@ -40,7 +40,7 @@ async def play_songs(vc: discord.VoiceClient, message: discord.Message):
             session.commit()
 
 
-
+@prefix_command
 class HandleEmptyPlay(CommandHandler):
     pat = r'play'
 
@@ -67,6 +67,7 @@ class HandleEmptyPlay(CommandHandler):
                 return (['The queue is empty.'], {})
 
 
+@prefix_command
 class HandlePlay(CommandHandler):
     pat = r'play (.*)'
 
@@ -111,6 +112,7 @@ class HandlePlay(CommandHandler):
         return [[], {}]
 
 
+@prefix_command
 class HandleSkip(CommandHandler):
     pat = r'(?:(?:skip)|(?:next))'
 
@@ -131,6 +133,7 @@ class HandleSkip(CommandHandler):
                         await self.message.channel.send('No more songs.')
 
 
+@prefix_command
 class HandleQueue(CommandHandler):
     pat = r'queue'
 
@@ -153,6 +156,7 @@ class HandleQueue(CommandHandler):
             return [[], {'embed': embed}]
 
 
+@prefix_command
 class HandleHistory(CommandHandler):
     pat = r'history'
 
@@ -177,6 +181,7 @@ class HandleHistory(CommandHandler):
             return [[], {'embed': embed}]
 
 
+@prefix_command
 class HandleDisconnect(CommandHandler):
     pat = r'(?:dc|stop)'
 

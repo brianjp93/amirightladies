@@ -3,6 +3,10 @@ from abc import abstractmethod, ABC
 import discord
 import re
 
+
+all_commands = []
+
+
 class CommandHandler(ABC):
     message: discord.Message
     pat: str
@@ -20,3 +24,8 @@ class CommandHandler(ABC):
     @property
     def match(self) -> Optional[re.Match]:
         return re.match(self.pat, self.message.content[1:])
+
+
+def prefix_command(cls):
+    all_commands.append(cls)
+    return cls

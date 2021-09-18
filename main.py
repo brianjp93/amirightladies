@@ -12,7 +12,7 @@ from resources import amirightladies as ladies
 from resources import tweet
 from resources import spotify
 from orm.models import Member
-import command_handlers as ch
+import commands
 import app
 
 
@@ -84,7 +84,7 @@ class Client(discord.Client):
         return [['💩'], {}]
 
     async def handle_command(self, message: DMessage) -> None:
-        for handler in ch.all_commands:
+        for handler in commands.all_commands:
             h = handler(message)
             if h.is_match():
                 send_message = await h.handle()

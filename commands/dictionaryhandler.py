@@ -1,9 +1,10 @@
-from .general import CommandHandler
+from .general import CommandHandler, prefix_command
 from aiohttp import ClientSession
 from discord import Embed
 import settings
 
 
+@prefix_command
 class HandleDefine(CommandHandler):
     pat = r'def(?:ine)? (.*)'
 
@@ -35,6 +36,7 @@ class HandleDefine(CommandHandler):
                 return [[], {'embed': embed}]
 
 
+@prefix_command
 class HandleUrban(CommandHandler):
     pat = r'urban (.*)'
 
