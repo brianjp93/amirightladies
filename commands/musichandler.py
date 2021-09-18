@@ -7,9 +7,11 @@ from sqlmodel import select
 from asyncio import sleep
 from datetime import datetime
 from typing import Optional
-from orm.models import Song, Guild, HistorySong
+from orm.models import Song, Guild, HistorySong, DeferSong
 from app import session
 from resources.yt import Yt
+import traceback
+from resources import spotify
 
 yt = Yt()
 
@@ -17,32 +19,39 @@ yt = Yt()
 async def play_songs(vc: discord.VoiceClient, message: discord.Message):
     if guild := Guild.get_from_discord_guild(message.guild):
         session.refresh(guild)
-        while guild.songs:
-            song = guild.songs[0]
-            vc.play(discord.FFmpegPCMAudio(executable='ffmpeg', source=song.file))
+        while guild.defersongs:
+            defersong = guild.defersongs[0]
+            song = Optional[Song]
+            if not defersong.song:
+                if song := await import_from_query(defersong.query):
+                    vc.play(discord.FFmpegPCMAudio(executable='ffmpeg', source=song.file))
 
-            hs = HistorySong(
-                song_id=song.id,
-                guild_id=guild.id,
-                created_at=int(datetime.now().timestamp()),
-            )
-            session.add(hs)
-            session.commit()
-            guild.history.append(hs)
-            session.commit()
+                    hs = HistorySong(
+                        song_id=song.id,
+                        guild_id=guild.id,
+                        created_at=int(datetime.now().timestamp()),
+                    )
+                    session.add(hs)
+                    session.commit()
+                    guild.history.append(hs)
+                    session.commit()
 
-            if message:
-                await message.channel.send(f'Playing song: {song.title}')
-            while vc.is_playing():
-                await sleep(.5)
-            session.refresh(guild)
-            guild.songs.remove(song)
-            session.commit()
+                    if message:
+                        await message.channel.send(f'Playing song: {song.title}')
+                    while vc.is_playing():
+                        await sleep(.5)
+                    session.refresh(guild)
+                    guild.defersongs.remove(defersong)
+                    session.commit()
+                else:
+                    await message.channel.send(f'Could not find a song for the query: {defersong.query}.')
+                    guild.defersongs.remove(defersong)
+                    session.commit()
 
 
 @prefix_command
 class HandleEmptyPlay(CommandHandler):
-    pat = r'play'
+    pat = r'^play$'
 
     async def handle(self):
         assert self.match
@@ -50,7 +59,7 @@ class HandleEmptyPlay(CommandHandler):
         assert isinstance(self.message.author, discord.Member)
         if guild := Guild.get_from_discord_guild(self.message.guild):
             songs = session.exec(
-                select(Song).where(Song.guilds.contains(guild))
+                select(DeferSong).where(DeferSong.guild == guild)
             ).fetchmany(10)
             if songs:
                 try:
@@ -73,45 +82,34 @@ class HandlePlay(CommandHandler):
 
     async def handle(self):
         assert self.match is not None
-        if content := self.match.groups()[0]:
-            if re.match(r'(.*)?youtube.com(.*)?', content):
-                return await self.handle_general(yt.get_with_url)
-            elif re.match(r'(.*)?spotify(.*)?playlist/([\w\d]+)(.*)?', content):
-                pass
-                # spotify.add_playlist_to_queue(content)
-            elif re.match(r'(.*)?spotify(.*)?track/([\w\d]+)(.*)?', content):
-                pass
-            else:
-                return await self.handle_general(yt.get_with_search)
-
-    async def handle_general(self, handler):
-        assert self.message.guild
-        content = self.message.content.lower().strip()
-        try:
-            voice_channel = self.message.author.voice.channel
-        except:
-            voice_channel = None
-            await self.message.channel.send("Couldn't find voice channel.")
-        if isinstance(voice_channel, discord.VoiceChannel):
-            song: Optional[Song]
-            if song := await handler(content):
+        if query := self.match.groups()[0]:
+            assert self.message.guild
+            try:
+                voice_channel = self.message.author.voice.channel
+            except:
+                voice_channel = None
+                await self.message.channel.send("Couldn't find voice channel.")
+            if isinstance(voice_channel, discord.VoiceChannel):
                 if guild := Guild.get_from_discord_guild(self.message.guild):
                     session.refresh(guild)
-                    guild.songs.append(song)
+                    df = DeferSong(query=query, guild=guild, created_at=int(datetime.now().timestamp()))
+                    session.add(df)
                     session.commit()
-                    await self.message.channel.send(f'Added to queue: {song.title}')
+                    guild.defersongs.append(df)
+                    session.commit()
+                    print('Added song to queue!')
+                    await self.message.channel.send(f'Added to queue: {df.query}')
+                    vc = None
                     try:
                         vc = await voice_channel.connect()
                         settings.vc_by_guild[self.message.guild.id] = vc
-                        await play_songs(vc, self.message)
                     except discord.ClientException as e:
-                        print(e)
+                        traceback.print_exc()
                         vc = settings.vc_by_guild.get(self.message.guild.id)
-                        if vc:
+                    if vc:
+                        if not vc.is_playing():
                             await play_songs(vc, self.message)
-            else:
-                await self.message.channel.send('Could not find song')
-        return [[], {}]
+            return [[], {}]
 
 
 @prefix_command
@@ -125,11 +123,11 @@ class HandleSkip(CommandHandler):
             vc.stop()
             if guild := Guild.get_from_discord_guild(self.message.guild):
                 session.refresh(guild)
-                if guild.songs:
-                    song = guild.songs[0]
-                    guild.songs.remove(song)
+                if guild.defersongs:
+                    song = guild.defersongs[0]
+                    guild.defersongs.remove(song)
                     session.commit()
-                    if guild.songs:
+                    if guild.defersongs:
                         await play_songs(vc, self.message)
                     else:
                         await self.message.channel.send('No more songs.')
@@ -137,22 +135,22 @@ class HandleSkip(CommandHandler):
 
 @prefix_command
 class HandleQueue(CommandHandler):
-    pat = r'queue'
+    pat = r'^queue$'
 
     async def handle(self):
         assert self.match
         assert self.message.guild
         if guild := Guild.get_from_discord_guild(self.message.guild):
             songs = session.exec(
-                select(Song).where(Song.guilds.contains(guild))
+                select(DeferSong).where(DeferSong.guild == guild)
             ).fetchmany(10)
             embed = discord.Embed()
             output = []
             for i, x in enumerate(songs):
-                title = x.title[:30]
-                if len(x.title) > 30:
+                title = x.query[:30]
+                if len(x.query) > 30:
                     title += '...'
-                output.append(f'{i + 1}. [{title}]({x.url})')
+                output.append(f'{i + 1}. [{title}]')
             output = '\n'.join(output)
             embed.add_field(name='Queue', value=output)
             return [[], {'embed': embed}]
@@ -160,7 +158,7 @@ class HandleQueue(CommandHandler):
 
 @prefix_command
 class HandleHistory(CommandHandler):
-    pat = r'history'
+    pat = r'^history$'
 
     async def handle(self):
         assert self.match
@@ -194,3 +192,27 @@ class HandleDisconnect(CommandHandler):
             if vc.is_playing():
                 vc.stop()
             await vc.disconnect()
+
+
+async def import_from_query(q: str):
+    """Import song from a query or url.
+    """
+    song = None
+    if re.match(r'(.*)?youtube.com(.*)?', q):
+        song = await yt.get_with_url(q)
+    elif re.match(r'(.*)?spotify(.*)?playlist/([\w\d]+)(.*)?', q):
+        pass
+        # spotify.add_playlist_to_queue(content)
+    elif re.match(r'(.*)?spotify(.*)?track/([\w\d]+)(.*)?', q):
+        r = spotify.get_track(q)
+        if r:
+            name = r['name']
+            artist = []
+            for a in r['artists']:
+                artist.append(a['name'])
+            artist = ', '.join(artist)
+            query = f'{name} {artist}'
+            return await import_from_query(query)
+    else:
+        song = await yt.get_with_search(q)
+    return song

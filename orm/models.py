@@ -26,23 +26,12 @@ class HistorySong(SQLModel, table=True):
     guild: Optional['Guild'] = Relationship(back_populates='history')
 
 
-class GuildSongLink(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    song: Optional[int] = Field(
-        default=None, foreign_key="song.id"
-    )
-    guild: Optional[int] = Field(
-        default=None, foreign_key="guild.id"
-    )
-    sort_int: int = 0
-
-
 class Guild(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     exid: int
 
     members: List["Member"] = Relationship(back_populates="guilds", link_model=MemberGuildLink)
-    songs: List['Song'] = Relationship(back_populates='guilds', link_model=GuildSongLink)
+    defersongs: List['DeferSong'] = Relationship(back_populates='guild')
     history: List['HistorySong'] = Relationship(back_populates='guild')
 
     @classmethod
@@ -116,4 +105,13 @@ class Song(SQLModel, table=True):
     title: str
     url: str
     file: str
-    guilds: List[Guild] = Relationship(back_populates="songs", link_model=GuildSongLink)
+
+
+class DeferSong(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    query: str
+    song: Optional['Song'] = Relationship()
+    song_id: Optional[int] = Field(foreign_key='song.id', default=None)
+    guild: Optional[Guild] = Relationship(back_populates="defersongs")
+    guild_id: Optional[int] = Field(foreign_key='guild.id', default=None)
+    created_at: int
