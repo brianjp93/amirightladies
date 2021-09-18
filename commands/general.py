@@ -1,10 +1,7 @@
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List, Type
 from abc import abstractmethod, ABC
 import discord
 import re
-
-
-all_commands = []
 
 
 class CommandHandler(ABC):
@@ -26,6 +23,9 @@ class CommandHandler(ABC):
         return re.match(self.pat, self.message.content[1:])
 
 
-def prefix_command(cls):
+all_commands: List[Type[CommandHandler]] = []
+
+
+def prefix_command(cls: Type[CommandHandler]) -> Type[CommandHandler]:
     all_commands.append(cls)
     return cls
