@@ -92,13 +92,27 @@ class HandlePlay(CommandHandler):
             if isinstance(voice_channel, discord.VoiceChannel):
                 if guild := Guild.get_from_discord_guild(self.message.guild):
                     session.refresh(guild)
-                    df = DeferSong(query=query, guild=guild, created_at=int(datetime.now().timestamp()))
-                    session.add(df)
+                    if re.match(r'(.*)?spotify(.*)?playlist/([\w\d]+)(.*)?', query):
+                        if tracks := spotify.get_playlist_tracks(query):
+                            tracks = list(tracks)
+                            await self.message.channel.send(f'Adding {len(tracks)} songs to the queue.')
+                            for track in tracks:
+                                name = track['name']
+                                artist = []
+                                for a in track['artists']:
+                                    artist.append(a['name'])
+                                artist = ', '.join(artist)
+                                df = DeferSong(
+                                    query=f'{name} {artist}',
+                                    guild=guild,
+                                    created_at=int(datetime.now().timestamp()),
+                                )
+                                session.add(df)
+                    else:
+                        df = DeferSong(query=query, guild=guild, created_at=int(datetime.now().timestamp()))
+                        session.add(df)
+                        await self.message.channel.send(f'Added to queue: {df.query}')
                     session.commit()
-                    guild.defersongs.append(df)
-                    session.commit()
-                    print('Added song to queue!')
-                    await self.message.channel.send(f'Added to queue: {df.query}')
                     vc = None
                     try:
                         vc = await voice_channel.connect()
@@ -141,19 +155,21 @@ class HandleQueue(CommandHandler):
         assert self.match
         assert self.message.guild
         if guild := Guild.get_from_discord_guild(self.message.guild):
-            songs = session.exec(
+            if songs := session.exec(
                 select(DeferSong).where(DeferSong.guild == guild)
-            ).fetchmany(10)
-            embed = discord.Embed()
-            output = []
-            for i, x in enumerate(songs):
-                title = x.query[:30]
-                if len(x.query) > 30:
-                    title += '...'
-                output.append(f'{i + 1}. [{title}]')
-            output = '\n'.join(output)
-            embed.add_field(name='Queue', value=output)
-            return [[], {'embed': embed}]
+            ).fetchmany(10):
+                embed = discord.Embed()
+                output = []
+                for i, x in enumerate(songs):
+                    title = x.query[:30]
+                    if len(x.query) > 30:
+                        title += '...'
+                    output.append(f'{i + 1}. [{title}]')
+                output = '\n'.join(output)
+                embed.add_field(name='Queue', value=output)
+                return [[], {'embed': embed}]
+            else:
+                return (['No songs in queue.'], {})
 
 
 @prefix_command
@@ -192,6 +208,19 @@ class HandleDisconnect(CommandHandler):
             if vc.is_playing():
                 vc.stop()
             await vc.disconnect()
+
+
+@prefix_command
+class HandleClear(CommandHandler):
+    pat = r'^clear$'
+
+    async def handle(self):
+        assert self.match
+        assert self.message.guild
+        if guild := Guild.get_from_discord_guild(self.message.guild):
+            guild.defersongs = []
+            session.commit()
+            return (['Clearing queue.'], {})
 
 
 async def import_from_query(q: str):
