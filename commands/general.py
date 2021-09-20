@@ -29,7 +29,7 @@ class CommandHandler(ABC):
         return self.message.content[1:]
 
     @cached_property
-    def groups(self) -> Dict[str, Optional[str]]:
+    def groups(self) -> Dict[str, str]:
         assert self.match
         vars = {}
         groups = self.match.groups()
@@ -37,7 +37,7 @@ class CommandHandler(ABC):
             try:
                 vars[name] = groups[i]
             except IndexError:
-                vars[name] = None
+                pass
         return vars
 
 
