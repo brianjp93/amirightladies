@@ -93,7 +93,7 @@ class HandlePlay(CommandHandler):
                 if guild := Guild.get_from_discord_guild(self.message.guild):
                     session.refresh(guild)
                     if re.match(r'(.*)?spotify(.*)?playlist/([\w\d]+)(.*)?', query):
-                        if tracks := spotify.get_playlist_tracks(query):
+                        if tracks := spotify.get_playlist_tracks(query, full=True):
                             tracks = list(tracks)
                             await self.message.channel.send(f'Adding {len(tracks)} songs to the queue.')
                             for track in tracks:

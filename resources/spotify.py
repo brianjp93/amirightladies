@@ -2,11 +2,13 @@ import settings
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import re
+from itertools import count
 
 auth = SpotifyClientCredentials(client_id=settings.SPOTIFY_ID, client_secret=settings.SPOTIFY_SECRET)
 api = spotipy.Spotify(auth_manager=auth)
 
-def get_playlist_tracks(q: str):
+
+def get_playlist_tracks(q: str, full=False):
     """Only retrieves first page of playlist.
     """
     playlist_id = None
@@ -15,10 +17,21 @@ def get_playlist_tracks(q: str):
     elif match := re.match(r'[\w\d]+', q):
         playlist_id = q
 
+    tracks = []
+    limit = 100
     if playlist_id:
-        r = api.playlist(playlist_id)
-        if r:
-            return (item['track'] for item in r['tracks']['items'])
+        for i in count():
+            if r := api.playlist_tracks(playlist_id, offset=i*limit):
+                items = r.get('items')
+                if not items:
+                    break
+                output = [item['track'] for item in items]
+                tracks.extend(output)
+                if not full:
+                    break
+                if not r['next']:
+                    break
+    return tracks
 
 
 def get_track(q: str):
