@@ -79,10 +79,10 @@ class HandleEmptyPlay(CommandHandler):
 @prefix_command
 class HandlePlay(CommandHandler):
     pat = r'play (.*)'
+    vars = ['query']
 
     async def handle(self):
-        assert self.match is not None
-        if query := self.match.groups()[0]:
+        if query := self.groups.get('query', None):
             assert self.message.guild
             try:
                 voice_channel = self.message.author.voice.channel
@@ -128,19 +128,23 @@ class HandlePlay(CommandHandler):
 
 @prefix_command
 class HandleSkip(CommandHandler):
-    pat = r'(?:(?:skip)|(?:next))'
+    pat = r'^(?:(?:skip)|(?:next))\s?(\d+)?$'
+    vars = ['count']
 
     async def handle(self):
-        assert self.match
         assert self.message.guild
+        count = int(self.groups.get('count', 1))
         if vc := settings.vc_by_guild.get(self.message.guild.id):
             vc.stop()
             if guild := Guild.get_from_discord_guild(self.message.guild):
                 session.refresh(guild)
                 if guild.defersongs:
-                    song = guild.defersongs[0]
-                    guild.defersongs.remove(song)
+                    await self.message.channel.send(f'Skipping {count} songs.')
+                    removesongs = [song for song in guild.defersongs[:count]]
+                    for song in removesongs:
+                        guild.defersongs.remove(song)
                     session.commit()
+                    session.refresh(guild)
                     if guild.defersongs:
                         await play_songs(vc, self.message)
                     else:

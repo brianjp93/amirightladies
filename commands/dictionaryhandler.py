@@ -7,10 +7,10 @@ import settings
 @prefix_command
 class HandleDefine(CommandHandler):
     pat = r'def(?:ine)? (.*)'
+    vars = ['query']
 
     async def handle(self):
-        assert self.match
-        word = self.match.groups()[0].strip()
+        word = (self.groups['query'] or '').strip()
         print(f'Trying to define word: {word}')
         async with ClientSession() as client_session:
             async with client_session.get(settings.DICTIONARYURL.format(**{'word': word})) as response:
@@ -38,11 +38,11 @@ class HandleDefine(CommandHandler):
 
 @prefix_command
 class HandleUrban(CommandHandler):
-    pat = r'urban (.*)'
+    pat = r'^urban (.*)$'
+    vars = ['query']
 
     async def handle(self):
-        assert self.match
-        word = self.match.groups()[0].strip()
+        word = self.groups['query']
         print(f'Trying to define word: {word}')
         url = 'https://mashape-community-urban-dictionary.p.rapidapi.com/define'
         headers = {

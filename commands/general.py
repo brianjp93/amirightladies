@@ -1,4 +1,5 @@
-from typing import Tuple, Optional, List, Type
+from typing import Tuple, Optional, List, Type, Dict
+from functools import cached_property
 from abc import abstractmethod, ABC
 import discord
 import re
@@ -8,6 +9,7 @@ class CommandHandler(ABC):
     """Commands which are prefixed."""
     message: discord.Message
     pat: str
+    vars: List[str] = []
 
     def __init__(self, message: discord.Message):
         self.message = message
@@ -19,12 +21,24 @@ class CommandHandler(ABC):
     def is_match(self) -> bool:
         return bool(re.match(self.pat, self.get_message()))
 
-    @property
+    @cached_property
     def match(self) -> Optional[re.Match]:
         return re.match(self.pat, self.get_message())
 
     def get_message(self):
         return self.message.content[1:]
+
+    @cached_property
+    def groups(self) -> Dict[str, Optional[str]]:
+        assert self.match
+        vars = {}
+        groups = self.match.groups()
+        for i, name in enumerate(self.vars):
+            try:
+                vars[name] = groups[i]
+            except IndexError:
+                vars[name] = None
+        return vars
 
 
 class GeneralHandler(ABC):
@@ -49,7 +63,7 @@ class GeneralHandler(ABC):
                 return True
         return False
 
-    @property
+    @cached_property
     def match(self) -> Optional[re.Match]:
         for pat in self.pats:
             if match := re.match(pat, self.get_message()):

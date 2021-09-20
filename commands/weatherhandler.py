@@ -12,17 +12,11 @@ weather = Weather(settings.OPEN_WEATHER_KEY)
 @prefix_command
 class HandleWeatherCityState(CommandHandler):
     pat = r'weather ([A-z\s]+),?\s?([A-z]+)?'
+    vars = ['city', 'state']
 
     async def handle(self):
         assert self.match
-        group = self.match.groups()
-        print(group)
-        city = state = None
-        if len(group) == 1:
-            city = group[0]
-        elif len(group) == 2:
-            city, state = group
-        data = await weather.get_current_weather(city=city, state=state)
+        data = await weather.get_current_weather(city=self.groups['city'], state=self.groups['state'])
         json = data['json']
         if json['cod'] == '404':
             return [['That city could not be found.'], {}]
@@ -32,10 +26,10 @@ class HandleWeatherCityState(CommandHandler):
 @prefix_command
 class HandleWeatherZip(CommandHandler):
     pat = r'weather (\d{5})'
+    vars = ['zipcode']
 
     async def handle(self):
-        assert self.match
-        zip = self.match.groups()[0]
+        zip = self.groups['zipcode']
         data = await weather.get_current_weather(zip=zip)
         json = data['json']
         if json['cod'] == '404':
