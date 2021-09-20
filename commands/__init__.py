@@ -5,7 +5,7 @@ from . import musichandler
 from . import weatherhandler
 from . import shithandler
 from . import humblehandler
-
+from . import ladieshandler
 
 
 __all__ = ['all_commands', 'general_commands']

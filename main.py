@@ -1,12 +1,7 @@
-import random
 import settings
-from typing import Union
-
 import discord
 from discord.ext import tasks
 from discord.message import Message as DMessage
-from discord.channel import TextChannel, DMChannel, GroupChannel
-from resources import amirightladies as ladies
 from resources import tweet
 from orm.models import Member
 import commands
@@ -38,9 +33,6 @@ class Client(discord.Client):
 
         channel_name = str(message.channel)
         if self.user != message.author:
-            if channel_name == 'am-i-right-ladies':
-                await self.write_cool_message(message.channel)
-
             if channel_name == 'watch-avatar-lisa':
                 self.avatar_channel = message.channel.id
                 url = tweet.get_avatar_tweet_url()
@@ -73,12 +65,6 @@ class Client(discord.Client):
             url = tweet.get_avatar_tweet_url()
             message = f'Hello Lisa, this is your hourly reminder to watch avatar.\n{url}'
             await channel.send(message) # type: ignore
-
-    async def write_cool_message(
-        self,
-        channel: Union[TextChannel, DMChannel, GroupChannel]
-    ) -> None:
-        await channel.send(random.choice(ladies.MESSAGE_LIST))
 
 
 if __name__ == '__main__':
