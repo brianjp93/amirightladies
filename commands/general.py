@@ -52,7 +52,7 @@ class GeneralHandler(ABC):
     @property
     def match(self) -> Optional[re.Match]:
         for pat in self.pats:
-            if match := re.match(pat, self.message.content):
+            if match := re.match(pat, self.get_message()):
                 return match
         return None
 
