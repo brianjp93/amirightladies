@@ -139,7 +139,7 @@ class HandleSkip(CommandHandler):
             if guild := Guild.get_from_discord_guild(self.message.guild):
                 session.refresh(guild)
                 if guild.defersongs:
-                    await self.message.channel.send(f'Skipping {count} songs.')
+                    await self.message.channel.send(f'Skipping {count} {"songs" if count > 1 else "song"}.')
                     removesongs = [song for song in guild.defersongs[:count]]
                     for song in removesongs:
                         guild.defersongs.remove(song)

@@ -35,7 +35,8 @@ class CommandHandler(ABC):
         groups = self.match.groups()
         for i, name in enumerate(self.vars):
             try:
-                vars[name] = groups[i]
+                if groups[i]:
+                    vars[name] = groups[i]
             except IndexError:
                 pass
         return vars
