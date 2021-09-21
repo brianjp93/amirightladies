@@ -39,6 +39,8 @@ async def play_songs(vc: discord.VoiceClient, message: discord.Message):
                     if message:
                         await message.channel.send(f'Playing song: {song.title}')
                     while vc.is_playing():
+                        if vc.is_paused():
+                            return
                         await sleep(.5)
                     session.refresh(guild)
                     guild.defersongs.remove(defersong)
@@ -66,12 +68,14 @@ class HandleEmptyPlay(CommandHandler):
                     assert self.message.author.voice is not None
                     vc = await self.message.author.voice.channel.connect()
                     settings.vc_by_guild[self.message.guild.id] = vc
-                    await play_songs(vc, self.message)
+                    if vc.is_paused() or not vc.is_playing():
+                        await play_songs(vc, self.message)
                 except discord.ClientException as e:
                     print(e)
                     vc = settings.vc_by_guild.get(self.message.guild.id)
                     if vc:
-                        await play_songs(vc, self.message)
+                        if vc.is_paused() or not vc.is_playing():
+                            await play_songs(vc, self.message)
             else:
                 return (['The queue is empty.'], {})
 
