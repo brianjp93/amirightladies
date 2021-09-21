@@ -121,6 +121,8 @@ class HandlePlay(CommandHandler):
                         traceback.print_exc()
                         vc = settings.vc_by_guild.get(self.message.guild.id)
                     if vc:
+                        if not vc.is_connected():
+                            await vc.voice_connect()
                         if not vc.is_playing():
                             await play_songs(vc, self.message)
             return [[], {}]
@@ -200,6 +202,21 @@ class HandleHistory(CommandHandler):
             embed.add_field(name='History', value=output)
             return [[], {'embed': embed}]
 
+
+@prefix_command
+class HandlePause(CommandHandler):
+    pat = r'^pause$'
+
+    async def handle(self):
+        assert self.match
+        if vc := settings.vc_by_guild.get(self.message.guild.id):
+            if vc.is_playing():
+                vc.pause()
+                return (['Pausing.'], {})
+            else:
+                return (['Nothing currently playing.'], {})
+        else:
+            return (['Could not find voice channel connection.'], {})
 
 @prefix_command
 class HandleDisconnect(CommandHandler):
