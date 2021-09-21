@@ -43,8 +43,11 @@ async def play_songs(vc: discord.VoiceClient, message: discord.Message):
                             return
                         await sleep(.5)
                     session.refresh(guild)
-                    guild.defersongs.remove(defersong)
-                    session.commit()
+                    try:
+                        guild.defersongs.remove(defersong)
+                        session.commit()
+                    except ValueError:
+                        print('could not remove song.')
                 else:
                     await message.channel.send(f'Could not find a song for the query: {defersong.query}.')
                     guild.defersongs.remove(defersong)
