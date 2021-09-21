@@ -16,7 +16,10 @@ class HandleWeatherCityState(CommandHandler):
 
     async def handle(self):
         assert self.match
-        data = await weather.get_current_weather(city=self.groups['city'], state=self.groups['state'])
+        data = await weather.get_current_weather(
+            city=self.groups.get('city'),
+            state=self.groups.get('state')
+        )
         json = data['json']
         if json['cod'] == '404':
             return [['That city could not be found.'], {}]
