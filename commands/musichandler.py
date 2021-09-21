@@ -20,6 +20,11 @@ async def play_songs(vc: discord.VoiceClient, message: discord.Message):
     if guild := Guild.get_from_discord_guild(message.guild):
         session.refresh(guild)
         while guild.defersongs:
+            if vc.is_paused():
+                await message.channel.send('Resuming.')
+                vc.resume()
+                while vc.is_playing():
+                    await sleep(.5)
             defersong = guild.defersongs[0]
             song = Optional[Song]
             if not defersong.song:
@@ -39,8 +44,6 @@ async def play_songs(vc: discord.VoiceClient, message: discord.Message):
                     if message:
                         await message.channel.send(f'Playing song: {song.title}')
                     while vc.is_playing():
-                        if vc.is_paused():
-                            return
                         await sleep(.5)
                     session.refresh(guild)
                     try:
