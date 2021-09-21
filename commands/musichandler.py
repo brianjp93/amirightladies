@@ -19,12 +19,11 @@ yt = Yt()
 async def play_songs(vc: discord.VoiceClient, message: discord.Message):
     if guild := Guild.get_from_discord_guild(message.guild):
         session.refresh(guild)
+        if vc.is_paused():
+            await message.channel.send('Resuming.')
+            vc.resume()
+            return
         while guild.defersongs:
-            if vc.is_paused():
-                await message.channel.send('Resuming.')
-                vc.resume()
-                while vc.is_playing():
-                    await sleep(.5)
             defersong = guild.defersongs[0]
             song = Optional[Song]
             if not defersong.song:
@@ -43,7 +42,7 @@ async def play_songs(vc: discord.VoiceClient, message: discord.Message):
 
                     if message:
                         await message.channel.send(f'Playing song: {song.title}')
-                    while vc.is_playing():
+                    while vc.is_playing() or vc.is_paused():
                         await sleep(.5)
                     session.refresh(guild)
                     try:
@@ -121,7 +120,7 @@ class HandlePlay(CommandHandler):
                     else:
                         df = DeferSong(query=query, guild=guild, created_at=int(datetime.now().timestamp()))
                         session.add(df)
-                        await self.message.channel.send(f'Added to queue: {df.query}')
+                        await self.message.channel.send(f'Added 1 song to queue.')
                     session.commit()
                     vc = None
                     try:
