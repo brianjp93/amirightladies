@@ -1,4 +1,4 @@
-from pytube import Search, Stream, YouTube
+from pytube import Search, Stream, YouTube, Playlist
 from orm.models import Song
 from sqlmodel import select
 from typing import Optional
@@ -36,3 +36,7 @@ class Yt:
             session.add(song)
             session.commit()
             return song
+
+    async def get_queries_from_playlist(self, q: str):
+        p = Playlist(q)
+        return [video.watch_url for video in p.videos]

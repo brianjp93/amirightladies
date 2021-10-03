@@ -117,6 +117,12 @@ class HandlePlay(CommandHandler):
                                     created_at=int(datetime.now().timestamp()),
                                 )
                                 session.add(df)
+                    elif re.match(r'(.*)youtube.com/playlist?(.*)', query):
+                        queries = await yt.get_queries_from_playlist(query)
+                        for q in queries:
+                            df = DeferSong(query=q, guild=guild, created_at=int(datetime.now().timestamp()))
+                            session.add(df)
+                        await self.message.channel.send(f'Adding {len(queries)} songs to queue.')
                     else:
                         df = DeferSong(query=query, guild=guild, created_at=int(datetime.now().timestamp()))
                         session.add(df)
