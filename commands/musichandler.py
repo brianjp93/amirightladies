@@ -101,22 +101,26 @@ class HandlePlay(CommandHandler):
             if isinstance(voice_channel, discord.VoiceChannel):
                 if guild := Guild.get_from_discord_guild(self.message.guild):
                     session.refresh(guild)
+                    tracks = None
                     if re.match(r'(.*)?spotify(.*)?playlist/([\w\d]+)(.*)?', query):
-                        if tracks := spotify.get_playlist_tracks(query, full=True):
-                            tracks = list(tracks)
-                            await self.message.channel.send(f'Adding {len(tracks)} songs to the queue.')
-                            for track in tracks:
-                                name = track['name']
-                                artist = []
-                                for a in track['artists']:
-                                    artist.append(a['name'])
-                                artist = ', '.join(artist)
-                                df = DeferSong(
-                                    query=f'{name} {artist}',
-                                    guild=guild,
-                                    created_at=int(datetime.now().timestamp()),
-                                )
-                                session.add(df)
+                        tracks = spotify.get_playlist_tracks(query, full=True)
+                    elif match := re.match(r'(?:.*)?spotify(?:.*)?album/([\w\d]+)(?:.*)?', query):
+                        tracks = spotify.api.album_tracks(match.groups()[0])['items']
+                    if tracks:
+                        tracks = list(tracks)
+                        await self.message.channel.send(f'Adding {len(tracks)} songs to the queue.')
+                        for track in tracks:
+                            name = track['name']
+                            artist = []
+                            for a in track['artists']:
+                                artist.append(a['name'])
+                            artist = ', '.join(artist)
+                            df = DeferSong(
+                                query=f'{name} {artist}',
+                                guild=guild,
+                                created_at=int(datetime.now().timestamp()),
+                            )
+                            session.add(df)
                     elif re.match(r'(.*)youtube.com/playlist?(.*)', query):
                         queries = await yt.get_queries_from_playlist(query)
                         for q in queries:
