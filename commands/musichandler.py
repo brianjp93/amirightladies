@@ -267,9 +267,7 @@ async def import_from_query(q: str):
     """Import song from a query or url.
     """
     song = None
-    if re.match(r'(.*)?youtube.com(.*)?', q):
-        song = await yt.get_with_url(q)
-    elif re.match(r'(.*)?youtu\.be(.*)?', q):
+    if re.match(r'(.*)?youtube.com(.*)?', q) or re.match(r'(.*)?youtu\.be(.*)?', q):
         song = await yt.get_with_url(q)
     elif re.match(r'(.*)?spotify(.*)?playlist/([\w\d]+)(.*)?', q):
         pass
