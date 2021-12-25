@@ -12,40 +12,26 @@ attrs==21.2.0
     # via aiohttp
 chardet==4.0.0
     # via aiohttp
-click==8.0.1
-    # via pip-tools
 discord.py==1.7.3
     # via discord.py-stubs
 discord.py-stubs==1.7.3
     # via -r dev.in
-idna==3.2
+idna==3.3
     # via yarl
-multidict==5.1.0
+multidict==5.2.0
     # via
     #   aiohttp
     #   yarl
-mypy==0.910
+mypy==0.930
     # via discord.py-stubs
 mypy-extensions==0.4.3
     # via mypy
-pep517==0.11.0
-    # via pip-tools
-pip-tools==6.2.0
-    # via -r dev.in
-toml==0.10.2
+tomli==2.0.0
     # via mypy
-tomli==1.2.1
-    # via pep517
 typing-extensions==3.10.0.2
     # via
     #   aiohttp
     #   discord.py-stubs
     #   mypy
-wheel==0.37.0
-    # via pip-tools
-yarl==1.6.3
+yarl==1.7.2
     # via aiohttp
-
-# The following packages are considered to be unsafe in a requirements file:
-# pip
-# setuptools
