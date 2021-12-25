@@ -1,15 +1,21 @@
-import settings
+from config.settings import get_settings, use_sentry
+from config.db import DB_CONFIG
 import discord
 from discord.ext import tasks
 from discord.message import Message as DMessage
 from resources import tweet
-from orm.models import Member
+from amirightladies.models import Member
 import commands
-import app
+from tortoise import Tortoise
 
 
 PREFIX = '.'
+settings = get_settings()
 
+async def init_turtle():
+    await Tortoise.init(
+        config=DB_CONFIG,
+    )
 
 class Client(discord.Client):
     def __init__(self, *args, **kwargs):
@@ -22,6 +28,7 @@ class Client(discord.Client):
 
     async def on_ready(self):
         print(f'Logged on as {self.user}')
+        await init_turtle()
 
     async def on_message(self, message: DMessage):
         content = message.content.lower()
@@ -29,7 +36,7 @@ class Client(discord.Client):
         # create member / guild if they don't exist
 
         if not getattr(message.author, 'bot', None):
-            Member.create_from_member(message.author)
+            await Member.create_from_member(message.author)
 
         channel_name = str(message.channel)
         if self.user != message.author:
@@ -68,9 +75,8 @@ class Client(discord.Client):
 
 
 if __name__ == '__main__':
-    app.build_all()
     client = Client()
-    settings.use_sentry(
+    use_sentry(
         client,
         dsn=settings.SENTRY_URI,
         # Set traces_sample_rate to 1.0 to capture 100%

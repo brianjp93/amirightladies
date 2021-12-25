@@ -3,7 +3,8 @@ from datetime import datetime
 from resources.weather import Weather
 from discord import Embed
 import pytz
-import settings
+from config.settings import get_settings
+settings = get_settings()
 
 
 weather = Weather(settings.OPEN_WEATHER_KEY)

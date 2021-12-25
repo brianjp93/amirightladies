@@ -1,7 +1,8 @@
 import twitter
 from datetime import datetime, timedelta
 import random
-import settings
+from config.settings import get_settings
+settings = get_settings()
 
 api = twitter.Api(
     consumer_key=settings.TWITTER_API_KEY,

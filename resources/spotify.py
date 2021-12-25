@@ -1,8 +1,9 @@
-import settings
+from config.settings import get_settings
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import re
 from itertools import count
+settings = get_settings()
 
 auth = SpotifyClientCredentials(client_id=settings.SPOTIFY_ID, client_secret=settings.SPOTIFY_SECRET)
 api = spotipy.Spotify(auth_manager=auth)

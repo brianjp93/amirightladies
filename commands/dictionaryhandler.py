@@ -1,7 +1,8 @@
 from .general import CommandHandler, prefix_command
 from aiohttp import ClientSession
 from discord import Embed
-import settings
+from config.settings import get_settings
+settings = get_settings()
 
 
 @prefix_command

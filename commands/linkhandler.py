@@ -1,6 +1,6 @@
 from .general import CommandHandler, prefix_command
-import settings
-
+from config.settings import get_settings
+settings = get_settings()
 
 @prefix_command
 class HandleLink(CommandHandler):

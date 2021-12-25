@@ -1,8 +1,7 @@
 from pytube import Search, Stream, YouTube, Playlist
-from orm.models import Song
-from sqlmodel import select
+from amirightladies.models import Song
 from typing import Optional
-from app import session
+
 
 class Yt:
     async def get_with_search(self, q):
@@ -13,19 +12,16 @@ class Yt:
             for song in qs.results:
                 if stream := song.streams.filter(only_audio=True).order_by('abr').desc().first():
                     if not stream.is_live:
-                        return self.download_stream(stream, song)
+                        return await self.download_stream(stream, song)
 
     async def get_with_url(self, q):
         song = YouTube(q)
         stream = song.streams.filter(only_audio=True).order_by('abr').desc().first()
         if stream:
-            return self.download_stream(stream, song)
+            return await self.download_stream(stream, song)
 
-    def download_stream(self, stream: Stream, source_song: YouTube):
-        song = session.exec(
-            select(Song).where(Song.stream_id==source_song.video_id)
-        ).first()
-        if song:
+    async def download_stream(self, stream: Stream, source_song: YouTube):
+        if song := await Song.filter(stream_id=source_song.video_id).first():
             return song
         else:
             file_path = stream.download('media')
@@ -33,8 +29,7 @@ class Yt:
                 stream_id=source_song.video_id, title=stream.title,
                 url=source_song.watch_url, file=file_path
             )
-            session.add(song)
-            session.commit()
+            await song.save()
             return song
 
     async def get_queries_from_playlist(self, q: str):

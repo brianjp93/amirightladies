@@ -4,54 +4,72 @@
 #
 #    pip-compile requirements.in
 #
+aerich==0.6.1
+    # via -r requirements.in
 aiohttp==3.7.4.post0
     # via
     #   -r requirements.in
     #   discord.py
+aiosqlite==0.17.0
+    # via tortoise-orm
 async-timeout==3.0.1
     # via aiohttp
 attrs==21.2.0
     # via aiohttp
-certifi==2021.5.30
+certifi==2021.10.8
     # via
     #   requests
     #   sentry-sdk
-cffi==1.14.6
+cffi==1.15.0
     # via pynacl
 chardet==4.0.0
     # via aiohttp
-charset-normalizer==2.0.5
+charset-normalizer==2.0.9
     # via requests
+click==8.0.3
+    # via aerich
+ddlparse==1.10.0
+    # via aerich
+dictdiffer==0.9.0
+    # via aerich
 discord.py==1.7.3
     # via -r requirements.in
 future==0.18.2
     # via python-twitter
-greenlet==1.1.1
+greenlet==1.1.2
     # via sqlalchemy
-idna==3.2
+idna==3.3
     # via
     #   requests
     #   yarl
-multidict==5.1.0
+iso8601==0.1.16
+    # via tortoise-orm
+multidict==5.2.0
     # via
     #   aiohttp
     #   yarl
 oauthlib==3.1.1
     # via requests-oauthlib
-pycparser==2.20
+pycparser==2.21
     # via cffi
 pydantic==1.8.2
     # via sqlmodel
 pynacl==1.4.0
     # via -r requirements.in
-python-dotenv==0.19.0
+pyparsing==3.0.6
+    # via ddlparse
+pypika-tortoise==0.1.2
+    # via tortoise-orm
+python-dotenv==0.19.2
     # via -r requirements.in
 python-twitter==3.5
     # via -r requirements.in
 git+https://github.com/pytube/pytube
     # via -r requirements.in
 pytz==2021.1
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   tortoise-orm
 requests==2.26.0
     # via
     #   -r requirements.in
@@ -68,21 +86,28 @@ six==1.16.0
     #   spotipy
 spotipy==2.19.0
     # via -r requirements.in
-sqlalchemy==1.4.23
+sqlalchemy==1.4.29
     # via sqlmodel
-sqlalchemy2-stubs==0.0.2a15
+sqlalchemy2-stubs==0.0.2a19
     # via sqlmodel
 sqlmodel==0.0.4
     # via -r requirements.in
-typing-extensions==3.10.0.2
+tomlkit==0.8.0
+    # via aerich
+tortoise-orm==0.17.8
+    # via
+    #   -r requirements.in
+    #   aerich
+typing-extensions==4.0.1
     # via
     #   aiohttp
+    #   aiosqlite
     #   pydantic
     #   sqlalchemy2-stubs
-urllib3==1.26.6
+urllib3==1.26.7
     # via
     #   requests
     #   sentry-sdk
     #   spotipy
-yarl==1.6.3
+yarl==1.7.2
     # via aiohttp
