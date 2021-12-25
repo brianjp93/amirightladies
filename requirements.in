@@ -9,5 +9,4 @@ PyNaCl
 requests
 sentry-sdk<1.4
 spotipy
-sqlmodel==0.0.4
 tortoise-orm
