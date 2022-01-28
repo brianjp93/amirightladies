@@ -47,6 +47,7 @@ class GeneralHandler(ABC):
     message: discord.Message
     pats: List[str]
     channel_name: Optional[str] = None
+    case_insensitive: bool = False
 
     def __init__(self, message: discord.Message):
         self.message = message
@@ -59,8 +60,11 @@ class GeneralHandler(ABC):
         if self.channel_name:
             if str(getattr(self.message.channel, 'name')) != self.channel_name:
                 return False
+        extra = {}
+        if self.case_insensitive:
+            extra['flags'] = re.IGNORECASE
         for pat in self.pats:
-            if bool(re.match(pat, self.get_message())):
+            if bool(re.match(pat, self.get_message(), **extra)):
                 return True
         return False
 
