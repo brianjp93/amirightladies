@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from __future__ import annotations
 from discord.member import Member as DMember
 from discord.user import User as DUser
 from discord.guild import Guild as DGuild
@@ -17,7 +17,7 @@ class Guild(models.Model):
     exid = fields.IntField(null=False)
 
     @classmethod
-    async def get_from_discord_guild(cls, dguild: Optional[DGuild]):
+    async def get_from_discord_guild(cls, dguild: DGuild | None):
         if not dguild:
             return
         return await cls.filter(exid=dguild.id).first()
@@ -33,11 +33,11 @@ class Member(models.Model):
     guilds = fields.ManyToManyField(model_name="models.Guild", related_name="members")
 
     @staticmethod
-    async def create_from_member(member: Union[DMember, DUser]) -> Union['Member', None]:
+    async def create_from_member(member: DMember | DUser) -> 'Member'| None:
         """Creates / Updates Member and associated Guild.
         """
         member_id = member.id
-        guild: Union[DGuild, None] = getattr(member, 'guild')
+        guild: DGuild | None = getattr(member, 'guild')
         new_guild = None
         if guild:
             new_guild = await Guild.filter(exid=guild.id).first()
