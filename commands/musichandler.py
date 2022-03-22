@@ -72,7 +72,7 @@ class HandleEmptyPlay(CommandHandler):
 
 @prefix_command
 class HandlePlay(CommandHandler):
-    pat = r'play(?P<now>now\s+)?\s?(?P<query>.*)'
+    pat = r'play(?P<now>(?:now)|(?:next))?\s(?P<query>.*)'
 
     async def handle(self):
         if query := self.groups.get('query', None):
