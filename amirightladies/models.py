@@ -33,7 +33,7 @@ class Member(models.Model):
     guilds = fields.ManyToManyField(model_name="models.Guild", related_name="members")
 
     @staticmethod
-    async def create_from_member(member: DMember | DUser) -> 'Member'| None:
+    async def create_from_member(member: DMember | DUser) -> 'Member' | None:
         """Creates / Updates Member and associated Guild.
         """
         member_id = member.id
