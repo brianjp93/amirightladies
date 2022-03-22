@@ -1,10 +1,10 @@
+from __future__ import annotations
 from .general import CommandHandler, prefix_command
 import discord
 import re
 from config.settings import get_settings
 
 from asyncio import sleep
-from datetime import datetime
 from typing import Optional
 from amirightladies.models import Song, Guild, HistorySong, DeferSong
 from resources.yt import Yt
@@ -21,10 +21,8 @@ async def play_songs(vc: discord.VoiceClient, message: discord.Message):
             await message.channel.send('Resuming.')
             vc.resume()
             return
-        while defersong := await guild.defersongs.order_by(
-            'created_at'
-        ).select_related('song').first():
-            defersong: DeferSong
+        defersong: DeferSong | None
+        while defersong := await guild.get_playlist().select_related('song').first():
             song = Optional[Song]
             if not defersong.song:
                 if song := await import_from_query(defersong.query):
@@ -74,8 +72,7 @@ class HandleEmptyPlay(CommandHandler):
 
 @prefix_command
 class HandlePlay(CommandHandler):
-    pat = r'play (.*)'
-    vars = ['query']
+    pat = r'play(?P<now>now\s+)?\s?(?P<query>.*)'
 
     async def handle(self):
         if query := self.groups.get('query', None):
@@ -104,19 +101,22 @@ class HandlePlay(CommandHandler):
                             df = DeferSong(
                                 query=f'{name} {artist}',
                                 guild=guild,
-                                created_at=int(datetime.now().timestamp()),
                             )
                             await df.save()
                     elif re.match(r'(.*)youtube.com/playlist?(.*)', query):
                         queries = await yt.get_queries_from_playlist(query)
                         for q in queries:
-                            df = DeferSong(query=q, guild=guild, created_at=int(datetime.now().timestamp()))
+                            df = DeferSong(query=q, guild=guild)
                             await df.save()
                         await self.message.channel.send(f'Adding {len(queries)} songs to queue.')
                     else:
-                        df = DeferSong(query=query, guild=guild, created_at=int(datetime.now().timestamp()))
+                        df = DeferSong(query=query, guild=guild)
                         await df.save()
-                        await self.message.channel.send(f'Added 1 song to queue.')
+                        if self.groups.get('now', None):
+                            await df.move_to_start()
+                            await self.message.channel.send(f'Added 1 song to beginning of queue.')
+                        else:
+                            await self.message.channel.send(f'Added 1 song to queue.')
                     vc = None
                     try:
                         vc = await voice_channel.connect()
@@ -134,8 +134,7 @@ class HandlePlay(CommandHandler):
 
 @prefix_command
 class HandleSkip(CommandHandler):
-    pat = r'^(?:(?:skip)|(?:next))\s?(\d+)?$'
-    vars = ['count']
+    pat = r'^(?:(?:skip)|(?:next))\s?(?P<count>\d+)?$'
 
     async def handle(self):
         assert self.message.guild
@@ -161,7 +160,7 @@ class HandleQueue(CommandHandler):
         assert self.match
         assert self.message.guild
         if guild := await Guild.get_from_discord_guild(self.message.guild):
-            if songs := await DeferSong.filter(guild=guild).limit(10):
+            if songs := await DeferSong.playlist(guild_id=guild.id).limit(10):
                 embed = discord.Embed()
                 output = []
                 for i, x in enumerate(songs):

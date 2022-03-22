@@ -3,6 +3,7 @@ from discord.member import Member as DMember
 from discord.user import User as DUser
 from discord.guild import Guild as DGuild
 from tortoise import models, fields
+from tortoise.queryset import QuerySet
 
 
 class HistorySong(models.Model):
@@ -15,12 +16,16 @@ class HistorySong(models.Model):
 class Guild(models.Model):
     id = fields.IntField(pk=True)
     exid = fields.IntField(null=False)
+    defersongs: QuerySet['DeferSong']
 
     @classmethod
     async def get_from_discord_guild(cls, dguild: DGuild | None):
         if not dguild:
             return
         return await cls.filter(exid=dguild.id).first()
+
+    def get_playlist(self):
+        return self.defersongs.all().order_by('sort_int')
 
 
 class Member(models.Model):
@@ -84,19 +89,31 @@ class DeferSong(models.Model):
     id = fields.IntField(pk=True)
     query = fields.CharField(max_length=128, default='')
     song = fields.ForeignKeyField(model_name='models.Song', null=True)
-    next = fields.OneToOneField(model_name='models.DeferSong', null=True, related_name='previous')
-    previous: DeferSong | None
+    sort_int = fields.IntField(null=False, blank=True, default=0, index=True)
     guild = fields.ForeignKeyField(model_name='models.Guild', related_name='defersongs', default=None, null=True)
     created_at = fields.DatetimeField(auto_now_add=True)
 
-    async def delete(self, *args, **kwargs):
-        new_next = self.next
-        await super().delete(*args, **kwargs)
-        if new_next:
-            if prev := self.previous:
-                prev.next = new_next
-                await prev.save()
+    class Meta:
+        unique_together = (('guild', 'sort_int'),)
+
+    async def save(self, *args, **kwargs):
+        # should use some subquery to update the sort_int inside the update I think
+        if self.id is None:
+            if ds := await DeferSong.filter(guild=self.guild).order_by('-sort_int').first():
+                self.sort_int = ds.sort_int + 1
+        await super().save(*args, **kwargs)
 
     @classmethod
-    async def last(cls, guild_id: int):
-        return await cls.filter(next=None, guild=guild_id).first()
+    def last(cls, guild_id: int):
+        return cls.playlist(guild_id).order_by('-sort_int').first()
+
+    @classmethod
+    def playlist(cls, guild_id: int):
+        return cls.filter(guild=guild_id).order_by('sort_int')
+
+    async def move_to_start(self):
+        assert self.guild
+        start = await self.playlist(self.guild.id).first()
+        if start:
+            self.sort_int = start.sort_int - 1
+            await self.save()

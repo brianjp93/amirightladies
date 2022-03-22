@@ -9,7 +9,6 @@ class CommandHandler(ABC):
     """Commands which are prefixed."""
     message: discord.Message
     pat: str
-    vars: List[str] = []
 
     def __init__(self, message: discord.Message):
         self.message = message
@@ -31,15 +30,7 @@ class CommandHandler(ABC):
     @cached_property
     def groups(self) -> Dict[str, str]:
         assert self.match
-        vars = {}
-        groups = self.match.groups()
-        for i, name in enumerate(self.vars):
-            try:
-                if groups[i]:
-                    vars[name] = groups[i]
-            except IndexError:
-                pass
-        return vars
+        return self.match.groupdict()
 
 
 class GeneralHandler(ABC):
