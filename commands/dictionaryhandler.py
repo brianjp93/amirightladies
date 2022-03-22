@@ -7,8 +7,7 @@ settings = get_settings()
 
 @prefix_command
 class HandleDefine(CommandHandler):
-    pat = r'def(?:ine)? (.*)'
-    vars = ['query']
+    pat = r'def(?:ine)? (?P<query>.*)'
 
     async def handle(self):
         word = (self.groups['query'] or '').strip()
@@ -39,8 +38,7 @@ class HandleDefine(CommandHandler):
 
 @prefix_command
 class HandleUrban(CommandHandler):
-    pat = r'^urban (.*)$'
-    vars = ['query']
+    pat = r'^urban (?P<query>.*)$'
 
     async def handle(self):
         word = self.groups['query']
