@@ -84,5 +84,19 @@ class DeferSong(models.Model):
     id = fields.IntField(pk=True)
     query = fields.CharField(max_length=128, default='')
     song = fields.ForeignKeyField(model_name='models.Song', null=True)
+    next = fields.OneToOneField(model_name='models.DeferSong', null=True, related_name='previous')
+    previous: DeferSong | None
     guild = fields.ForeignKeyField(model_name='models.Guild', related_name='defersongs', default=None, null=True)
     created_at = fields.DatetimeField(auto_now_add=True)
+
+    async def delete(self, *args, **kwargs):
+        new_next = self.next
+        await super().delete(*args, **kwargs)
+        if new_next:
+            if prev := self.previous:
+                prev.next = new_next
+                await prev.save()
+
+    @classmethod
+    async def last(cls, guild_id: int):
+        return await cls.filter(next=None, guild=guild_id).first()

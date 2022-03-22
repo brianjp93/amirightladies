@@ -8,3 +8,7 @@ install:
 	pip install -r requirements.txt
 	pip install -r dev.txt
 	sudo apt-get install ffmpeg
+remake-migrations:
+	rm migrations/ -R
+	rm local.db
+	aerich init-db

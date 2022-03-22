@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS "defersong" (
     "query" VARCHAR(128) NOT NULL  DEFAULT '',
     "created_at" TIMESTAMP NOT NULL  DEFAULT CURRENT_TIMESTAMP,
     "guild_id" INT REFERENCES "guild" ("id") ON DELETE CASCADE,
-    "song_id" INT REFERENCES "song" ("id") ON DELETE CASCADE
+    "song_id" INT REFERENCES "song" ("id") ON DELETE CASCADE,
+    "next_id" INT  UNIQUE REFERENCES "defersong" ("id") ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "historysong" (
     "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
