@@ -1,5 +1,6 @@
 aerich
 aiohttp
+asyncpg
 discord.py
 python-dotenv
 python-twitter

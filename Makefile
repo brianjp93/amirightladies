@@ -1,3 +1,5 @@
+fly-proxy:
+	flyctl proxy 5432 -a amirightladies
 run:
 	pip install -r requirements.txt
 	python main.py

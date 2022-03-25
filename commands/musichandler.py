@@ -138,7 +138,7 @@ class HandleSkip(CommandHandler):
 
     async def handle(self):
         assert self.message.guild
-        count = int(self.groups.get('count', 1))
+        count = int(self.groups.get('count') or 1)
         if vc := settings.vc_by_guild.get(self.message.guild.id):
             vc.stop()
             if guild := await Guild.get_from_discord_guild(self.message.guild):

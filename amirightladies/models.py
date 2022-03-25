@@ -4,6 +4,7 @@ from discord.user import User as DUser
 from discord.guild import Guild as DGuild
 from tortoise import models, fields
 from tortoise.queryset import QuerySet
+from tortoise.expressions import F
 
 
 class HistorySong(models.Model):
@@ -15,7 +16,7 @@ class HistorySong(models.Model):
 
 class Guild(models.Model):
     id = fields.IntField(pk=True)
-    exid = fields.IntField(null=False)
+    exid = fields.BigIntField(null=False)
     defersongs: QuerySet['DeferSong']
 
     @classmethod
@@ -30,8 +31,8 @@ class Guild(models.Model):
 
 class Member(models.Model):
     id = fields.IntField(pk=True)
-    exid = fields.IntField()
-    name = fields.CharField(max_length=64, null=False)
+    exid = fields.BigIntField()
+    name = fields.CharField(max_length=128, null=False)
     nick = fields.CharField(max_length=64, null=True)
     discriminator = fields.CharField(max_length=64, null=False)
     bot = fields.BooleanField(default=False)
@@ -115,5 +116,7 @@ class DeferSong(models.Model):
         assert self.guild
         start = await self.playlist(self.guild.id).first()
         if start:
-            self.sort_int = start.sort_int - 1
+            start.sort_int = start.sort_int - 1
+            await start.save()
+            self.sort_int = start.sort_int + 1
             await self.save()
