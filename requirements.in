@@ -5,6 +5,7 @@ discord.py
 python-dotenv
 python-twitter
 git+https://github.com/pytube/pytube
+pydantic
 pytz==2021.1
 PyNaCl
 requests

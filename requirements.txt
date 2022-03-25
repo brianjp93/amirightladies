@@ -52,6 +52,8 @@ oauthlib==3.2.0
     # via requests-oauthlib
 pycparser==2.21
     # via cffi
+pydantic==1.9.0
+    # via -r requirements.in
 pynacl==1.5.0
     # via -r requirements.in
 pyparsing==3.0.7
@@ -92,6 +94,7 @@ typing-extensions==4.1.1
     # via
     #   aiohttp
     #   aiosqlite
+    #   pydantic
 urllib3==1.26.9
     # via
     #   requests

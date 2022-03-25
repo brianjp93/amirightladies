@@ -1,13 +1,12 @@
-ARG PYTHON_VERSION=3.8
+FROM python:3.8-alpine
 
-FROM python:${PYTHON_VERSION}
-
-RUN apt-get update && apt-get install -y \
-    python3-pip \
-    python3-venv \
-    python3-dev \
-    python3-setuptools \
-    python3-wheel
+RUN apk update && apk upgrade
+RUN apk add --no-cache git \
+    libffi-dev \
+    pkgconfig \
+    gcc \
+    libc-dev \
+    python3-dev
 
 RUN mkdir -p /app
 WORKDIR /app
