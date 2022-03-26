@@ -6,7 +6,8 @@ RUN apk add --no-cache git \
     pkgconfig \
     gcc \
     libc-dev \
-    python3-dev
+    python3-dev \
+    libffi-dev libsodium-dev opus-dev ffmpeg
 
 RUN mkdir -p /app
 WORKDIR /app
