@@ -1,0 +1,25 @@
+# local development setup stuff
+# fly only uses the dockerfile, not this docker-compose.yml
+version: "3.3"
+
+services:
+  db:
+    image: postgres:14.1-alpine
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    env_file: .env
+  main:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    command: python main.py
+    volumes:
+      - .:/app
+    links:
+      - db:db
+    env_file: .env
+    depends_on:
+      - db
+    stdin_open: true
