@@ -20,3 +20,7 @@ processes = []
   allowed_public_ports = []
   auto_rollback = true
   cmd = ["python3", "main.py"]
+
+[[mounts]]
+  source = "amirightladies_storage"
+  destination = "/app/media"
