@@ -4,7 +4,6 @@ from discord.user import User as DUser
 from discord.guild import Guild as DGuild
 from tortoise import models, fields
 from tortoise.queryset import QuerySet
-from tortoise.expressions import F
 
 
 class HistorySong(models.Model):
