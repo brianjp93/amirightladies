@@ -1,6 +1,4 @@
-aerich
 aiohttp
-asyncpg
 discord.py
 python-dotenv
 python-twitter
@@ -12,4 +10,3 @@ PyNaCl
 requests
 sentry-sdk<1.4
 spotipy
-tortoise-orm

@@ -1,4 +1,4 @@
-from config.settings import get_settings, use_sentry, get_db
+from config.settings import get_settings, use_sentry
 # from config.db import DB_CONFIG
 import discord
 from discord.ext import tasks
@@ -19,14 +19,12 @@ class Client(discord.Client):
         self.avatar_channel = None
         super().__init__(*args, **kwargs)
         self.set_up()
-        self.db = await get_db()
 
     def set_up(self):
         self.send_avatar_message.start()
 
     async def on_ready(self):
         print(f'Logged on as {self.user}')
-        # await init_turtle()
 
     async def on_message(self, message: DMessage):
         content = message.content.lower()

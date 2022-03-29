@@ -4,20 +4,14 @@
 #
 #    pip-compile requirements.in
 #
-aerich==0.6.2
-    # via -r requirements.in
 aiohttp==3.7.4.post0
     # via
     #   -r requirements.in
     #   discord.py
-aiosqlite==0.17.0
-    # via tortoise-orm
 anyio==3.5.0
     # via httpcore
 async-timeout==3.0.1
     # via aiohttp
-asyncpg==0.25.0
-    # via -r requirements.in
 attrs==21.4.0
     # via aiohttp
 certifi==2021.10.8
@@ -35,13 +29,7 @@ charset-normalizer==2.0.12
     #   httpx
     #   requests
 click==8.1.0
-    # via
-    #   aerich
-    #   prisma
-ddlparse==1.10.0
-    # via aerich
-dictdiffer==0.9.0
-    # via aerich
+    # via prisma
 discord.py==1.7.3
     # via -r requirements.in
 future==0.18.2
@@ -58,8 +46,6 @@ idna==3.3
     #   requests
     #   rfc3986
     #   yarl
-iso8601==1.0.2
-    # via tortoise-orm
 jinja2==3.1.1
     # via prisma
 markupsafe==2.1.1
@@ -80,10 +66,6 @@ pydantic==1.9.0
     #   prisma
 pynacl==1.5.0
     # via -r requirements.in
-pyparsing==3.0.7
-    # via ddlparse
-pypika-tortoise==0.1.4
-    # via tortoise-orm
 python-dotenv==0.20.0
     # via
     #   -r requirements.in
@@ -93,9 +75,7 @@ python-twitter==3.5
 git+https://github.com/pytube/pytube
     # via -r requirements.in
 pytz==2021.1
-    # via
-    #   -r requirements.in
-    #   tortoise-orm
+    # via -r requirements.in
 requests==2.27.1
     # via
     #   -r requirements.in
@@ -117,16 +97,9 @@ sniffio==1.2.0
     #   httpx
 spotipy==2.19.0
     # via -r requirements.in
-tomlkit==0.10.1
-    # via aerich
-tortoise-orm==0.19.0
-    # via
-    #   -r requirements.in
-    #   aerich
 typing-extensions==4.1.1
     # via
     #   aiohttp
-    #   aiosqlite
     #   prisma
     #   pydantic
 urllib3==1.26.9
