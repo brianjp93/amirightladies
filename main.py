@@ -6,8 +6,8 @@ from discord.message import Message as DMessage
 from resources import tweet
 import commands
 import prisma
+from amirightladies.models import create_from_member
 from prisma import Prisma
-from prisma.models import Member
 
 PREFIX = '.'
 settings = get_settings()
@@ -34,7 +34,7 @@ class Client(discord.Client):
         # create member / guild if they don't exist
 
         if not getattr(message.author, 'bot', None):
-            await Member.create_from_member(message.author)
+            await create_from_member(message.author)
 
         channel_name = str(message.channel)
         if self.user != message.author:

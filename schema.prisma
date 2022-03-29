@@ -10,9 +10,14 @@ generator db {
 }
 
 model HistorySong {
-    id      Int  @id @default(autoincrement())
-    song    Song @relation(fields: [song_id], references: [id])
-    song_id Int  @unique
+    id         Int      @id @default(autoincrement())
+    song       Song     @relation(fields: [song_id], references: [id])
+    song_id    Int      @unique
+    guild      Guild    @relation(fields: [guild_id], references: [id])
+    guild_id   Int
+    created_at DateTime @default(now())
+
+    @@index([created_at])
 }
 
 model Song {
@@ -30,7 +35,7 @@ model DeferSong {
     query      String   @default("") @db.VarChar(128)
     song       Song?    @relation(fields: [song_id], references: [id])
     song_id    Int?
-    sort_int   Int      @default(0)
+    sort_int   Int      @default(autoincrement())
     guild      Guild?   @relation(fields: [guild_id], references: [id])
     guild_id   Int
     created_at DateTime @default(now())
@@ -49,8 +54,9 @@ model Member {
 }
 
 model Guild {
-    id         Int         @id @default(autoincrement())
-    exid       BigInt      @unique
-    defersongs DeferSong[]
-    members    Member[]
+    id           Int           @id @default(autoincrement())
+    exid         BigInt        @unique
+    defersongs   DeferSong[]
+    members      Member[]
+    historysongs HistorySong[]
 }

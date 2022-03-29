@@ -4,7 +4,6 @@ from pydantic import BaseSettings
 from functools import lru_cache
 import sentry_sdk
 import discord
-from prisma import Prisma
 
 load_dotenv()
 
@@ -44,12 +43,6 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings():
     return Settings()
-
-
-async def get_db():
-    db = Prisma()
-    await db.connect()
-    return db
 
 
 # https://github.com/RDIL/bluejay/blob/master/discord-sentry-reporting/discord_sentry_reporting/__init__.py
