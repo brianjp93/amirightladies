@@ -1,0 +1,56 @@
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+generator db {
+    provider        = "prisma-client-py"
+    interface       = "asyncio"
+    previewFeatures = ["extendedIndexes"]
+}
+
+model HistorySong {
+    id      Int  @id @default(autoincrement())
+    song    Song @relation(fields: [song_id], references: [id])
+    song_id Int  @unique
+}
+
+model Song {
+    id          Int          @id @default(autoincrement())
+    historysong HistorySong?
+    stream_id   String       @db.VarChar(512)
+    title       String       @db.VarChar(512)
+    url         String       @db.VarChar(512)
+    file        String       @db.VarChar(512)
+    defersongs  DeferSong[]
+}
+
+model DeferSong {
+    id         Int      @id @default(autoincrement())
+    query      String   @default("") @db.VarChar(128)
+    song       Song?    @relation(fields: [song_id], references: [id])
+    song_id    Int?
+    sort_int   Int      @default(0)
+    guild      Guild?   @relation(fields: [guild_id], references: [id])
+    guild_id   Int
+    created_at DateTime @default(now())
+
+    @@unique([guild_id, sort_int])
+}
+
+model Member {
+    id            Int     @id @default(autoincrement())
+    exid          BigInt  @unique
+    name          String  @db.VarChar(128)
+    nick          String? @db.VarChar(64)
+    discriminator String  @db.VarChar(64)
+    bot           Boolean @default(false)
+    guilds        Guild[]
+}
+
+model Guild {
+    id         Int         @id @default(autoincrement())
+    exid       BigInt      @unique
+    defersongs DeferSong[]
+    members    Member[]
+}

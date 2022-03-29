@@ -14,7 +14,7 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    command: python main.py
+    command: bash -c "prisma generate && python main.py"
     volumes:
       - .:/app
     links:

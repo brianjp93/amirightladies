@@ -6,6 +6,7 @@ python-dotenv
 python-twitter
 git+https://github.com/pytube/pytube
 pydantic
+prisma
 pytz==2021.1
 PyNaCl
 requests

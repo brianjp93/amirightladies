@@ -1,78 +1,76 @@
 from __future__ import annotations
+from typing import cast
 from discord.member import Member as DMember
 from discord.user import User as DUser
 from discord.guild import Guild as DGuild
-from tortoise import models, fields
-from tortoise.queryset import QuerySet
+from prisma import models
+from prisma import types
 
 
-class HistorySong(models.Model):
-    id = fields.IntField(pk=True)
-    song = fields.ForeignKeyField('models.Song', on_delete=fields.CASCADE, null=False)
-    guild = fields.ForeignKeyField('models.Guild', related_name='history', on_delete=fields.CASCADE, null=False)
-    created_at = fields.DatetimeField(auto_now_add=True, null=False)
+class HistorySong(models.HistorySong):
+    pass
 
-
-class Guild(models.Model):
-    id = fields.IntField(pk=True)
-    exid = fields.BigIntField(null=False)
-    defersongs: QuerySet['DeferSong']
-
+class Guild(models.Guild):
     @classmethod
     async def get_from_discord_guild(cls, dguild: DGuild | None):
         if not dguild:
             return
-        return await cls.filter(exid=dguild.id).first()
-
-    def get_playlist(self):
-        return self.defersongs.all().order_by('sort_int')
-
-
-class Member(models.Model):
-    id = fields.IntField(pk=True)
-    exid = fields.BigIntField()
-    name = fields.CharField(max_length=128, null=False)
-    nick = fields.CharField(max_length=64, null=True)
-    discriminator = fields.CharField(max_length=64, null=False)
-    bot = fields.BooleanField(default=False)
-    guilds = fields.ManyToManyField(model_name="models.Guild", related_name="members")
+        return await cls.prisma().find_first(where={'exid': dguild.id})
 
     @staticmethod
-    async def create_from_member(member: DMember | DUser) -> 'Member' | None:
+    def get_playlist(guild_id: int):
+        return models.DeferSong.prisma().find_many(
+            where={'guild_id': guild_id},
+            order={'sort_int': 'asc'},
+        )
+
+
+class Member(models.Member):
+    @classmethod
+    async def create_from_member(cls, member: DMember | DUser) -> Member | None:
         """Creates / Updates Member and associated Guild.
         """
         member_id = member.id
         guild: DGuild | None = getattr(member, 'guild')
         new_guild = None
         if guild:
-            new_guild = await Guild.filter(exid=guild.id).first()
+            new_guild = await Guild.prisma().find_first(where={'exid': guild.id})
             print('Searching for existing guild.')
             if not new_guild:
                 print('Creating new guild.')
-                new_guild = Guild(exid=guild.id)
-                await new_guild.save()
+                new_guild = await Guild.prisma().create({
+                    'exid': guild.id
+                })
 
-        new_member = await Member.filter(exid=member_id).first()
+        new_member = await cls.prisma().find_first(where={'exid': member_id})
         update = {
             "name": member.name,
             "discriminator": member.discriminator,
             "bot": member.bot,
             "nick": getattr(member, 'nick', ''),
+            "exid": member.id,
         }
         if new_member:
             print('Updating member.')
+            update = cast(types.MemberUpdateInput, update)
             for key, val in update.items():
                 setattr(new_member, key, val)
+            new_member = await cls.prisma().update(where={'exid': member_id}, data=update)
         elif member_id:
+            update = cast(types.MemberCreateInput, update)
             print('Creating new member.')
-            new_member = Member(
-                exid=member_id,
-                **update,
+            new_member = await cls.prisma().create(
+                data=update
             )
-            await new_member.save()
 
         if new_member and new_guild:
-            await new_member.guilds.add(new_guild)
+            new_member.guilds
+            await cls.prisma().update(
+                where={'id': new_member.id},
+                data={
+                    'guilds': {'push': [new_guild.id]}
+                }
+            )
         return new_member
 
 

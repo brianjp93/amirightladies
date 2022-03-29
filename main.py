@@ -1,34 +1,32 @@
-from config.settings import get_settings, use_sentry
-from config.db import DB_CONFIG
+from config.settings import get_settings, use_sentry, get_db
+# from config.db import DB_CONFIG
 import discord
 from discord.ext import tasks
 from discord.message import Message as DMessage
 from resources import tweet
-from amirightladies.models import Member
 import commands
-from tortoise import Tortoise
-
+import prisma
+from prisma import Prisma
+from prisma.models import Member
 
 PREFIX = '.'
 settings = get_settings()
 
-async def init_turtle():
-    await Tortoise.init(
-        config=DB_CONFIG,
-    )
+prisma.register(Prisma())
 
 class Client(discord.Client):
-    def __init__(self, *args, **kwargs):
+    async def __init__(self, *args, **kwargs):
         self.avatar_channel = None
         super().__init__(*args, **kwargs)
         self.set_up()
+        self.db = await get_db()
 
     def set_up(self):
         self.send_avatar_message.start()
 
     async def on_ready(self):
         print(f'Logged on as {self.user}')
-        await init_turtle()
+        # await init_turtle()
 
     async def on_message(self, message: DMessage):
         content = message.content.lower()
