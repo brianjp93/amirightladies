@@ -12,7 +12,7 @@ generator db {
 model HistorySong {
     id         Int      @id @default(autoincrement())
     song       Song     @relation(fields: [song_id], references: [id], onDelete: Cascade)
-    song_id    Int      @unique
+    song_id    Int
     guild      Guild    @relation(fields: [guild_id], references: [id])
     guild_id   Int
     created_at DateTime @default(now())
@@ -21,20 +21,20 @@ model HistorySong {
 }
 
 model Song {
-    id          Int          @id @default(autoincrement())
-    historysong HistorySong?
-    stream_id   String       @db.VarChar(512)
-    title       String       @db.VarChar(512)
-    url         String       @db.VarChar(512)
-    file        String       @db.VarChar(512)
-    defersong   DeferSong?
+    id           Int           @id @default(autoincrement())
+    historysongs HistorySong[]
+    stream_id    String        @db.VarChar(512)
+    title        String        @db.VarChar(512)
+    url          String        @db.VarChar(512)
+    file         String        @db.VarChar(512)
+    defersong    DeferSong?
 }
 
 model DeferSong {
     id         Int      @id @default(autoincrement())
     query      String   @default("") @db.VarChar(128)
     song       Song?    @relation(fields: [song_id], references: [id], onDelete: SetNull)
-    song_id    Int?
+    song_id    Int?     @unique
     sort_int   Int      @default(autoincrement())
     guild      Guild?   @relation(fields: [guild_id], references: [id], onDelete: Cascade)
     guild_id   Int
