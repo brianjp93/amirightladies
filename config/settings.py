@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     APP_NAME = 'Amirightladies'
     TOKEN: str
     CLIENT_ID: str = ''
-    INVITE_LINK: str = f'https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}&permissions=157307235904&redirect_uri=https%3A%2F%2Fdiscord.com%2Fapi%2Fwebhooks%2F880631007366225981%2Fib2gYaWlfdphCFst0bEwNxTJBx15RheQajxhZ9II5uVKenIaeRYeAb9oJGx4ddMb5fG9&scope=bot'
+    INVITE_LINK: str = f'https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}&permissions=292446923888&redirect_uri=https%3A%2F%2Fdiscord.com%2Fapi%2Fwebhooks%2F880631007366225981%2Fib2gYaWlfdphCFst0bEwNxTJBx15RheQajxhZ9II5uVKenIaeRYeAb9oJGx4ddMb5fG9&response_type=code&scope=messages.read%20guilds.join%20guilds.members.read%20bot%20identify'
 
     CLIENT_SECRET: str
     PUBLIC_KEY: str
