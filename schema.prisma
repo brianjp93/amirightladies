@@ -11,7 +11,7 @@ generator db {
 
 model HistorySong {
     id         Int      @id @default(autoincrement())
-    song       Song     @relation(fields: [song_id], references: [id])
+    song       Song     @relation(fields: [song_id], references: [id], onDelete: Cascade)
     song_id    Int      @unique
     guild      Guild    @relation(fields: [guild_id], references: [id])
     guild_id   Int
@@ -27,30 +27,32 @@ model Song {
     title       String       @db.VarChar(512)
     url         String       @db.VarChar(512)
     file        String       @db.VarChar(512)
-    defersongs  DeferSong[]
+    defersong   DeferSong?
 }
 
 model DeferSong {
     id         Int      @id @default(autoincrement())
     query      String   @default("") @db.VarChar(128)
-    song       Song?    @relation(fields: [song_id], references: [id])
+    song       Song?    @relation(fields: [song_id], references: [id], onDelete: SetNull)
     song_id    Int?
     sort_int   Int      @default(autoincrement())
-    guild      Guild?   @relation(fields: [guild_id], references: [id])
+    guild      Guild?   @relation(fields: [guild_id], references: [id], onDelete: Cascade)
     guild_id   Int
     created_at DateTime @default(now())
 
     @@unique([guild_id, sort_int])
+    @@index([sort_int])
 }
 
 model Member {
-    id            Int     @id @default(autoincrement())
-    exid          BigInt  @unique
-    name          String  @db.VarChar(128)
-    nick          String? @db.VarChar(64)
-    discriminator String  @db.VarChar(64)
-    bot           Boolean @default(false)
+    id            Int      @id @default(autoincrement())
+    exid          BigInt   @unique
+    name          String   @db.VarChar(128)
+    nick          String?  @db.VarChar(64)
+    discriminator String   @db.VarChar(64)
+    bot           Boolean  @default(false)
     guilds        Guild[]
+    updated_at    DateTime @updatedAt
 }
 
 model Guild {

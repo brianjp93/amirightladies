@@ -14,7 +14,10 @@ processes = []
   protocol = "tcp"
 
 [deploy]
-  release_command = "aerich upgrade"
+  release_command = "prisma migrate deploy"
+
+[build]
+  dockerfile = "docker/Dockerfile"
 
 [experimental]
   allowed_public_ports = []

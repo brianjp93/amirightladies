@@ -8,13 +8,13 @@ services:
     volumes:
       - ./data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
     env_file: .env
   main:
     build:
       context: .
-      dockerfile: ./Dockerfile
-    command: bash -c "prisma generate && python main.py"
+      dockerfile: ./docker/Dockerfile
+    command: bash -c "python main.py"
     volumes:
       - .:/app
     links:

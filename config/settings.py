@@ -9,7 +9,6 @@ load_dotenv()
 
 class Settings(BaseSettings):
     APP_NAME = 'Amirightladies'
-    DATABASE_URL: str = 'sqlite://local.db'
     TOKEN: str
     CLIENT_ID: str = ''
     INVITE_LINK: str = f'https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}&permissions=157307235904&redirect_uri=https%3A%2F%2Fdiscord.com%2Fapi%2Fwebhooks%2F880631007366225981%2Fib2gYaWlfdphCFst0bEwNxTJBx15RheQajxhZ9II5uVKenIaeRYeAb9oJGx4ddMb5fG9&scope=bot'

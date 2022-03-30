@@ -1,6 +1,7 @@
 from __future__ import annotations
 from .general import CommandHandler, prefix_command
 import discord
+from discord import Member as DMember, GroupChannel
 import re
 from config.settings import get_settings
 
@@ -66,6 +67,8 @@ class HandleEmptyPlay(CommandHandler):
             if await get_playlist(guild.id, take=10):
                 try:
                     assert self.message.author.voice is not None
+                    assert self.message.author.voice.channel is not None
+                    assert not isinstance(self.message.author.voice.channel, GroupChannel)
                     vc = await self.message.author.voice.channel.connect()
                     settings.vc_by_guild[self.message.guild.id] = vc
                     if vc.is_paused() or not vc.is_playing():
@@ -88,6 +91,8 @@ class HandlePlay(CommandHandler):
         if query := self.groups.get("query", None):
             assert self.message.guild
             try:
+                assert isinstance(self.message.author, DMember)
+                assert self.message.author.voice
                 voice_channel = self.message.author.voice.channel
             except:
                 voice_channel = None
@@ -100,7 +105,8 @@ class HandlePlay(CommandHandler):
                     elif match := re.match(
                         r"(?:.*)?spotify(?:.*)?album/([\w\d]+)(?:.*)?", query
                     ):
-                        tracks = spotify.api.album_tracks(match.groups()[0])["items"]
+                        album = spotify.api.album_tracks(match.groups()[0])
+                        tracks = album["items"] if album else None
                     if tracks:
                         tracks = list(tracks)
                         await self.message.channel.send(
@@ -142,7 +148,7 @@ class HandlePlay(CommandHandler):
                     try:
                         vc = await voice_channel.connect()
                         settings.vc_by_guild[self.message.guild.id] = vc
-                    except discord.ClientException as e:
+                    except discord.ClientException:
                         traceback.print_exc()
                         vc = settings.vc_by_guild.get(self.message.guild.id)
                     if vc:
@@ -233,6 +239,7 @@ class HandlePause(CommandHandler):
 
     async def handle(self):
         assert self.match
+        assert self.message.guild
         if vc := settings.vc_by_guild.get(self.message.guild.id):
             if vc.is_playing():
                 vc.pause()

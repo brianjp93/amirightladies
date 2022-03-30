@@ -1,2 +1,5 @@
-data/*
-media/*
+data*
+media*
+.env
+.git*
+.env.example

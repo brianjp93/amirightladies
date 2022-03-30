@@ -1,5 +1,4 @@
 from config.settings import get_settings, use_sentry
-# from config.db import DB_CONFIG
 import discord
 from discord.ext import tasks
 from discord.message import Message as DMessage
@@ -7,15 +6,14 @@ from resources import tweet
 import commands
 import prisma
 from amirightladies.models import create_from_member
-from prisma import Prisma
 
 PREFIX = '.'
 settings = get_settings()
 
-prisma.register(Prisma())
+db = prisma.Prisma(auto_register=True)
 
 class Client(discord.Client):
-    async def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         self.avatar_channel = None
         super().__init__(*args, **kwargs)
         self.set_up()
@@ -25,6 +23,7 @@ class Client(discord.Client):
 
     async def on_ready(self):
         print(f'Logged on as {self.user}')
+        await db.connect()
 
     async def on_message(self, message: DMessage):
         content = message.content.lower()

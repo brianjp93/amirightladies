@@ -2,6 +2,7 @@ from __future__ import annotations
 from discord.member import Member as DMember
 from discord.user import User as DUser
 from discord.guild import Guild as DGuild
+from prisma import get_client
 from prisma import models
 from prisma import types
 
@@ -74,4 +75,6 @@ async def move_to_start(defersong_id: int):
     if start and start.id != song1.id:
         start.sort_int = start.sort_int - 1
         song1.sort_int = start.sort_int + 1
-        models.DeferSong.prisma().upsert
+        async with get_client().batch_() as batcher:
+            batcher.defersong.update(where={'id': start.id}, data={'sort_int': start.sort_int})
+            batcher.defersong.update(where={'id': song1.id}, data={'sort_int': song1.sort_int})
