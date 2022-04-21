@@ -28,7 +28,7 @@ charset-normalizer==2.0.12
     # via
     #   httpx
     #   requests
-click==8.1.0
+click==8.1.2
     # via prisma
 discord.py==1.7.3
     # via -r requirements.in
@@ -56,7 +56,7 @@ multidict==6.0.2
     #   yarl
 oauthlib==3.2.0
     # via requests-oauthlib
-prisma==0.6.3
+prisma==0.6.4
     # via -r requirements.in
 pycparser==2.21
     # via cffi
@@ -72,7 +72,7 @@ python-dotenv==0.20.0
     #   prisma
 python-twitter==3.5
     # via -r requirements.in
-git+https://github.com/pytube/pytube
+git+https://github.com/kinshuk-h/pytube
     # via -r requirements.in
 pytz==2021.1
     # via -r requirements.in
@@ -97,7 +97,7 @@ sniffio==1.2.0
     #   httpx
 spotipy==2.19.0
     # via -r requirements.in
-typing-extensions==4.1.1
+typing-extensions==4.2.0
     # via
     #   aiohttp
     #   prisma

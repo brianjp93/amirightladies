@@ -2,7 +2,8 @@ aiohttp
 discord.py
 python-dotenv
 python-twitter
-git+https://github.com/pytube/pytube
+# git+https://github.com/pytube/pytube
+git+https://github.com/kinshuk-h/pytube
 pydantic
 prisma
 pytz==2021.1
