@@ -8,13 +8,13 @@ aiohttp==3.7.4.post0
     # via
     #   -r requirements.in
     #   discord.py
-anyio==3.5.0
+anyio==3.6.1
     # via httpcore
 async-timeout==3.0.1
     # via aiohttp
 attrs==21.4.0
     # via aiohttp
-certifi==2021.10.8
+certifi==2022.5.18
     # via
     #   httpcore
     #   httpx
@@ -28,7 +28,7 @@ charset-normalizer==2.0.12
     # via
     #   httpx
     #   requests
-click==8.1.0
+click==8.1.3
     # via prisma
 discord.py==1.7.3
     # via -r requirements.in
@@ -46,7 +46,7 @@ idna==3.3
     #   requests
     #   rfc3986
     #   yarl
-jinja2==3.1.1
+jinja2==3.1.2
     # via prisma
 markupsafe==2.1.1
     # via jinja2
@@ -56,7 +56,7 @@ multidict==6.0.2
     #   yarl
 oauthlib==3.2.0
     # via requests-oauthlib
-prisma==0.6.3
+prisma==0.6.5
     # via -r requirements.in
 pycparser==2.21
     # via cffi
@@ -97,7 +97,7 @@ sniffio==1.2.0
     #   httpx
 spotipy==2.19.0
     # via -r requirements.in
-typing-extensions==4.1.1
+typing-extensions==4.2.0
     # via
     #   aiohttp
     #   prisma
