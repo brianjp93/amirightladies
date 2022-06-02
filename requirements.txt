@@ -8,13 +8,13 @@ aiohttp==3.7.4.post0
     # via
     #   -r requirements.in
     #   discord.py
-anyio==3.5.0
+anyio==3.6.1
     # via httpcore
 async-timeout==3.0.1
     # via aiohttp
 attrs==21.4.0
     # via aiohttp
-certifi==2021.10.8
+certifi==2022.5.18.1
     # via
     #   httpcore
     #   httpx
@@ -25,10 +25,8 @@ cffi==1.15.0
 chardet==4.0.0
     # via aiohttp
 charset-normalizer==2.0.12
-    # via
-    #   httpx
-    #   requests
-click==8.1.0
+    # via requests
+click==8.1.3
     # via prisma
 discord.py==1.7.3
     # via -r requirements.in
@@ -36,9 +34,9 @@ future==0.18.2
     # via python-twitter
 h11==0.12.0
     # via httpcore
-httpcore==0.14.7
+httpcore==0.15.0
     # via httpx
-httpx==0.22.0
+httpx==0.23.0
     # via prisma
 idna==3.3
     # via
@@ -46,7 +44,7 @@ idna==3.3
     #   requests
     #   rfc3986
     #   yarl
-jinja2==3.1.1
+jinja2==3.1.2
     # via prisma
 markupsafe==2.1.1
     # via jinja2
@@ -56,11 +54,11 @@ multidict==6.0.2
     #   yarl
 oauthlib==3.2.0
     # via requests-oauthlib
-prisma==0.6.3
+prisma==0.6.6
     # via -r requirements.in
 pycparser==2.21
     # via cffi
-pydantic==1.9.0
+pydantic==1.9.1
     # via
     #   -r requirements.in
     #   prisma
@@ -72,7 +70,7 @@ python-dotenv==0.20.0
     #   prisma
 python-twitter==3.5
     # via -r requirements.in
-git+https://github.com/pytube/pytube
+git+https://github.com/brianjp93/pytube
     # via -r requirements.in
 pytz==2021.1
     # via -r requirements.in
@@ -97,7 +95,7 @@ sniffio==1.2.0
     #   httpx
 spotipy==2.19.0
     # via -r requirements.in
-typing-extensions==4.1.1
+typing-extensions==4.2.0
     # via
     #   aiohttp
     #   prisma
